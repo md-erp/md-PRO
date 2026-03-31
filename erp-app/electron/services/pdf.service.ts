@@ -1,0 +1,191 @@
+import { getDb } from '../database/connection'
+
+export interface PdfInvoiceData {
+  document: any
+  lines: any[]
+  company: any
+  payments: any[]
+}
+
+export function getInvoiceDataForPdf(documentId: number): PdfInvoiceData {
+  const db = getDb()
+
+  const document = db.prepare(`
+    SELECT d.*,
+      CASE d.party_type WHEN 'client' THEN c.name WHEN 'supplier' THEN s.name END as party_name,
+      CASE d.party_type WHEN 'client' THEN c.address WHEN 'supplier' THEN s.address END as party_address,
+      CASE d.party_type WHEN 'client' THEN c.ice WHEN 'supplier' THEN s.ice END as party_ice,
+      CASE d.party_type WHEN 'client' THEN c.if_number WHEN 'supplier' THEN s.if_number END as party_if,
+      di.currency, di.exchange_rate, di.payment_method, di.due_date, di.payment_status
+    FROM documents d
+    LEFT JOIN clients   c ON c.id = d.party_id AND d.party_type = 'client'
+    LEFT JOIN suppliers s ON s.id = d.party_id AND d.party_type = 'supplier'
+    LEFT JOIN doc_invoices di ON di.document_id = d.id
+    WHERE d.id = ?
+  `).get(documentId) as any
+
+  const lines = db.prepare(`
+    SELECT dl.*, p.name as product_name, p.code as product_code, p.unit
+    FROM document_lines dl
+    LEFT JOIN products p ON p.id = dl.product_id
+    WHERE dl.document_id = ?
+    ORDER BY dl.id ASC
+  `).all(documentId) as any[]
+
+  const company = db.prepare('SELECT * FROM device_config WHERE id = 1').get() as any
+
+  const payments = db.prepare(`
+    SELECT pa.amount, p.method, p.date, p.cheque_number, p.bank
+    FROM payment_allocations pa
+    JOIN payments p ON p.id = pa.payment_id
+    WHERE pa.document_id = ?
+    ORDER BY p.date ASC
+  `).all(documentId) as any[]
+
+  return { document, lines, company, payments }
+}
+
+// Template HTML pour la facture
+export function generateInvoiceHtml(data: PdfInvoiceData): string {
+  const { document: doc, lines, company, payments } = data
+
+  const fmt = (n: number) => new Intl.NumberFormat('fr-MA', { minimumFractionDigits: 2 }).format(n ?? 0)
+  const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('fr-FR') : '—'
+
+  const totalPaid = payments.reduce((s, p) => s + p.amount, 0)
+  const remaining = (doc.total_ttc ?? 0) - totalPaid
+
+  const DOC_TITLES: Record<string, string> = {
+    invoice: 'FACTURE', quote: 'DEVIS', bl: 'BON DE LIVRAISON',
+    proforma: 'FACTURE PROFORMA', avoir: 'AVOIR',
+    purchase_order: 'BON DE COMMANDE', purchase_invoice: 'FACTURE FOURNISSEUR',
+  }
+
+  const linesHtml = lines.map(l => `
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0">
+        <div style="font-weight:500">${l.product_name ?? l.description ?? '—'}</div>
+        ${l.product_code ? `<div style="font-size:11px;color:#888;font-family:monospace">${l.product_code}</div>` : ''}
+      </td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:center">${l.quantity} ${l.unit ?? ''}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:right">${fmt(l.unit_price)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:center">${l.discount > 0 ? l.discount + '%' : '—'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:center">${l.tva_rate}%</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600">${fmt(l.total_ttc)}</td>
+    </tr>
+  `).join('')
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size:13px; color:#333; background:#fff; }
+  .page { padding:40px; max-width:800px; margin:0 auto; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:40px; }
+  .company-name { font-size:22px; font-weight:700; color:#1E3A5F; }
+  .company-info { font-size:11px; color:#666; margin-top:4px; line-height:1.6; }
+  .doc-title { font-size:28px; font-weight:700; color:#1E3A5F; text-align:right; }
+  .doc-number { font-size:14px; color:#F0A500; font-weight:600; text-align:right; margin-top:4px; }
+  .doc-date { font-size:12px; color:#888; text-align:right; margin-top:2px; }
+  .parties { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:30px; }
+  .party-box { background:#f8fafc; border-radius:8px; padding:16px; }
+  .party-label { font-size:10px; text-transform:uppercase; color:#888; font-weight:600; margin-bottom:6px; letter-spacing:0.5px; }
+  .party-name { font-size:15px; font-weight:600; color:#1E3A5F; }
+  .party-info { font-size:11px; color:#666; margin-top:4px; line-height:1.6; }
+  table { width:100%; border-collapse:collapse; margin-bottom:20px; }
+  thead { background:#1E3A5F; color:white; }
+  thead th { padding:10px 12px; text-align:left; font-size:12px; font-weight:500; }
+  thead th:last-child, thead th:nth-child(2), thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5) { text-align:center; }
+  thead th:last-child { text-align:right; }
+  .totals { display:flex; justify-content:flex-end; margin-bottom:30px; }
+  .totals-box { width:260px; }
+  .totals-row { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; border-bottom:1px solid #f0f0f0; }
+  .totals-row.total { font-size:16px; font-weight:700; color:#1E3A5F; border-bottom:none; padding-top:10px; }
+  .totals-row.remaining { color:#EF4444; font-weight:600; }
+  .footer { margin-top:40px; padding-top:20px; border-top:2px solid #1E3A5F; display:flex; justify-content:space-between; font-size:11px; color:#888; }
+  .stamp-area { width:150px; height:80px; border:1px dashed #ccc; border-radius:4px; display:flex; align-items:center; justify-content:center; color:#ccc; font-size:11px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="company-name">${company?.company_name ?? 'Entreprise'}</div>
+      <div class="company-info">
+        ${company?.company_address ? company.company_address + '<br>' : ''}
+        ${company?.company_phone ? 'Tél: ' + company.company_phone + '<br>' : ''}
+        ${company?.company_ice ? 'ICE: ' + company.company_ice + '<br>' : ''}
+        ${company?.company_if ? 'IF: ' + company.company_if : ''}
+      </div>
+    </div>
+    <div>
+      <div class="doc-title">${DOC_TITLES[doc.type] ?? doc.type.toUpperCase()}</div>
+      <div class="doc-number">N° ${doc.number}</div>
+      <div class="doc-date">Date: ${fmtDate(doc.date)}</div>
+      ${doc.due_date ? `<div class="doc-date">Échéance: ${fmtDate(doc.due_date)}</div>` : ''}
+    </div>
+  </div>
+
+  <!-- Parties -->
+  <div class="parties">
+    <div class="party-box">
+      <div class="party-label">Émetteur</div>
+      <div class="party-name">${company?.company_name ?? '—'}</div>
+      <div class="party-info">
+        ${company?.company_ice ? 'ICE: ' + company.company_ice : ''}
+      </div>
+    </div>
+    <div class="party-box">
+      <div class="party-label">${doc.party_type === 'client' ? 'Client' : 'Fournisseur'}</div>
+      <div class="party-name">${doc.party_name ?? '—'}</div>
+      <div class="party-info">
+        ${doc.party_address ? doc.party_address + '<br>' : ''}
+        ${doc.party_ice ? 'ICE: ' + doc.party_ice : ''}
+        ${doc.party_if ? ' | IF: ' + doc.party_if : ''}
+      </div>
+    </div>
+  </div>
+
+  <!-- Lignes -->
+  <table>
+    <thead>
+      <tr>
+        <th>Désignation</th>
+        <th style="text-align:center">Qté</th>
+        <th style="text-align:right">Prix HT</th>
+        <th style="text-align:center">Rem.</th>
+        <th style="text-align:center">TVA</th>
+        <th style="text-align:right">Total TTC</th>
+      </tr>
+    </thead>
+    <tbody>${linesHtml}</tbody>
+  </table>
+
+  <!-- Totaux -->
+  <div class="totals">
+    <div class="totals-box">
+      <div class="totals-row"><span>Total HT</span><span>${fmt(doc.total_ht)} MAD</span></div>
+      <div class="totals-row"><span>TVA</span><span>${fmt(doc.total_tva)} MAD</span></div>
+      <div class="totals-row total"><span>Total TTC</span><span>${fmt(doc.total_ttc)} MAD</span></div>
+      ${totalPaid > 0 ? `<div class="totals-row"><span>Payé</span><span style="color:#10B981">- ${fmt(totalPaid)} MAD</span></div>` : ''}
+      ${remaining > 0.01 ? `<div class="totals-row remaining"><span>Reste à payer</span><span>${fmt(remaining)} MAD</span></div>` : ''}
+    </div>
+  </div>
+
+  ${doc.notes ? `<div style="background:#f8fafc;border-radius:8px;padding:12px;font-size:12px;color:#666;margin-bottom:20px"><strong>Notes:</strong> ${doc.notes}</div>` : ''}
+
+  <!-- Footer -->
+  <div class="footer">
+    <div>
+      <div>Merci pour votre confiance</div>
+      <div style="margin-top:4px">${company?.company_name ?? ''} — ${company?.company_ice ? 'ICE: ' + company.company_ice : ''}</div>
+    </div>
+    <div class="stamp-area">Cachet & Signature</div>
+  </div>
+</div>
+</body>
+</html>`
+}

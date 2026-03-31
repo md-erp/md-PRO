@@ -1,0 +1,87 @@
+
+Système de comptabilité et de
+facturation
+Facture
+numero de pièce
+Date pièce
+Nom client
+Ice client
+Mode paiement
+Produits
+prix HT et prix TTC (20%)
+Quantité
+En dirham
+remise
+can be converted to pdf
+Payment
+cash
+bank transfer
+cheque
+LCN
+=> payment history per client related to invoicesSuivi des revenus et depenses
+Enregistrement des depenses / vente / Achats
+joindre les doc
+Comptabilité general
+plan comptable
+systéme debit / credit
+gestion clients et fournisseurs
+Separé
+Fiche client / Fournisseur
+Nom
+Adress
+Email
+Telephone
+IC-E
+paiement
+Gestion du stock
+Liste des produit
+Niveau de stock
+devient automatique
+prix de revient et prix de venteplusieur utilisateurs
+Administrateur utilisateur
+Sauvegarde des données
+Export excel / PDF
+Gestion commerciale
+Devis
+Bon de livraison
+Facture proforma
+Avoirs
+Stock
+A. Stock matiére premiere
+code article
+Designation
+Unite
+Quantité
+prix d’achat
+Fournisseur
+TVA d’achat
+date d’entrée en stock
+Numero de bon receptionB. Stock produits finis
+code produit
+Designation
+Unite
+Quantité en stock
+cout de revient
+prix de vente
+C. Transformation
+Barre aluminium long
+transformation en cout par metre
+Module Achats
+A. Achat locaux
+Bons de commande
+Bon de reception
+facture fournisseurs
+TVA
+paiement fournisseurs
+B. Importations
+factures fournisseurs etrangers
+frais de douanefrais
+Transitaire
+TVA import
+Cout total
+Repartition du cout sur chaque produit
+Module production
+Fiche de production
+Assemblage pour fabrication produit finale
+Programme usine qui produit de la matiére premiere et import des produit d’exterieur.
+Aussi que achete des produits semi-fini locaux.

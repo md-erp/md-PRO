@@ -1,0 +1,205 @@
+import { handle } from './index'
+import { getDb } from '../database/connection'
+
+export function registerReportHandlers(): void {
+  handle('reports:get', (data: { type: string; filters: Record<string, any> }) => {
+    const db = getDb()
+    const { type, filters } = data
+
+    switch (type) {
+      case 'sales':
+        return getSalesReport(db, filters)
+      case 'purchases':
+        return getPurchasesReport(db, filters)
+      case 'stock':
+        return getStockReport(db, filters)
+      case 'receivables':
+        return getReceivablesReport(db, filters)
+      case 'cheques':
+        return getChequesReport(db, filters)
+      case 'profit_loss':
+        return getProfitLossReport(db, filters)
+      case 'tva_detail':
+        return getTvaDetailReport(db, filters)
+      case 'stock_movements':
+        return getStockMovementsReport(db, filters)
+      case 'payments':
+        return getPaymentsReport(db, filters)
+      default:
+        throw new Error(`Type de rapport inconnu: ${type}`)
+    }
+  })
+}
+
+function getSalesReport(db: any, filters: any) {
+  const params: any[] = []
+  let where = "WHERE d.type = 'invoice' AND d.is_deleted = 0 AND d.status != 'cancelled'"
+  if (filters.start_date) { where += ' AND d.date >= ?'; params.push(filters.start_date) }
+  if (filters.end_date)   { where += ' AND d.date <= ?'; params.push(filters.end_date) }
+  if (filters.client_id)  { where += ' AND d.party_id = ?'; params.push(filters.client_id) }
+
+  return db.prepare(`
+    SELECT d.number, d.date, c.name as client_name,
+      d.total_ht, d.total_tva, d.total_ttc, di.payment_status
+    FROM documents d
+    LEFT JOIN clients c ON c.id = d.party_id
+    LEFT JOIN doc_invoices di ON di.document_id = d.id
+    ${where}
+    ORDER BY d.date DESC
+  `).all(...params)
+}
+
+function getPurchasesReport(db: any, filters: any) {
+  const params: any[] = []
+  let where = "WHERE d.type IN ('purchase_invoice','import_invoice') AND d.is_deleted = 0"
+  if (filters.start_date) { where += ' AND d.date >= ?'; params.push(filters.start_date) }
+  if (filters.end_date)   { where += ' AND d.date <= ?'; params.push(filters.end_date) }
+
+  return db.prepare(`
+    SELECT d.number, d.date, s.name as supplier_name,
+      d.total_ht, d.total_tva, d.total_ttc
+    FROM documents d
+    LEFT JOIN suppliers s ON s.id = d.party_id
+    ${where}
+    ORDER BY d.date DESC
+  `).all(...params)
+}
+
+function getStockReport(db: any, _filters: any) {
+  return db.prepare(`
+    SELECT p.code, p.name, p.unit, p.type,
+      p.stock_quantity, p.cmup_price,
+      p.stock_quantity * p.cmup_price as stock_value,
+      p.min_stock,
+      CASE WHEN p.stock_quantity <= p.min_stock THEN 1 ELSE 0 END as is_low
+    FROM products p
+    WHERE p.is_deleted = 0
+    ORDER BY p.name ASC
+  `).all()
+}
+
+function getReceivablesReport(db: any, _filters: any) {
+  return db.prepare(`
+    SELECT c.name as client_name, c.phone, c.ice,
+      COALESCE(SUM(d.total_ttc), 0) as total_invoiced,
+      COALESCE(SUM(pa.amount), 0) as total_paid,
+      COALESCE(SUM(d.total_ttc), 0) - COALESCE(SUM(pa.amount), 0) as balance
+    FROM clients c
+    LEFT JOIN documents d ON d.party_id = c.id AND d.party_type = 'client'
+      AND d.type = 'invoice' AND d.is_deleted = 0 AND d.status != 'cancelled'
+    LEFT JOIN payment_allocations pa ON pa.document_id = d.id
+    GROUP BY c.id
+    HAVING balance > 0
+    ORDER BY balance DESC
+  `).all()
+}
+
+function getChequesReport(db: any, filters: any) {
+  const params: any[] = []
+  let where = "WHERE p.method IN ('cheque', 'lcn')"
+  if (filters.start_date) { where += ' AND p.due_date >= ?'; params.push(filters.start_date) }
+  if (filters.end_date)   { where += ' AND p.due_date <= ?'; params.push(filters.end_date) }
+
+  return db.prepare(`
+    SELECT p.id, p.amount, p.method, p.date, p.due_date,
+      p.cheque_number, p.bank, p.status, p.party_type,
+      CASE p.party_type WHEN 'client' THEN c.name WHEN 'supplier' THEN s.name END as party_name
+    FROM payments p
+    LEFT JOIN clients   c ON c.id = p.party_id AND p.party_type = 'client'
+    LEFT JOIN suppliers s ON s.id = p.party_id AND p.party_type = 'supplier'
+    ${where}
+    ORDER BY p.due_date ASC
+  `).all(...params)
+}
+
+function getProfitLossReport(db: any, filters: any) {
+  const params: any[] = []
+  let dateFilter = ''
+  if (filters.start_date) { dateFilter += ' AND je.date >= ?'; params.push(filters.start_date) }
+  if (filters.end_date)   { dateFilter += ' AND je.date <= ?'; params.push(filters.end_date) }
+
+  const revenues = db.prepare(`
+    SELECT a.code, a.name,
+      COALESCE(SUM(jl.credit), 0) - COALESCE(SUM(jl.debit), 0) as amount
+    FROM accounts a
+    JOIN journal_lines jl ON jl.account_id = a.id
+    JOIN journal_entries je ON je.id = jl.entry_id
+    WHERE a.class = 7 ${dateFilter}
+    GROUP BY a.id
+  `).all(...params)
+
+  const expenses = db.prepare(`
+    SELECT a.code, a.name,
+      COALESCE(SUM(jl.debit), 0) - COALESCE(SUM(jl.credit), 0) as amount
+    FROM accounts a
+    JOIN journal_lines jl ON jl.account_id = a.id
+    JOIN journal_entries je ON je.id = jl.entry_id
+    WHERE a.class = 6 ${dateFilter}
+    GROUP BY a.id
+  `).all(...params)
+
+  const totalRevenue = (revenues as any[]).reduce((s, r) => s + r.amount, 0)
+  const totalExpense = (expenses as any[]).reduce((s, r) => s + r.amount, 0)
+
+  return { revenues, expenses, totalRevenue, totalExpense, result: totalRevenue - totalExpense }
+}
+
+function getTvaDetailReport(db: any, filters: any) {
+  const params: any[] = []
+  let where = "WHERE d.is_deleted = 0 AND d.status != 'cancelled'"
+  if (filters.start_date) { where += ' AND d.date >= ?'; params.push(filters.start_date) }
+  if (filters.end_date)   { where += ' AND d.date <= ?'; params.push(filters.end_date) }
+
+  // TVA facturée par taux
+  return db.prepare(`
+    SELECT d.number, d.date, d.type,
+      CASE d.party_type WHEN 'client' THEN c.name WHEN 'supplier' THEN s.name END as party_name,
+      dl.tva_rate, SUM(dl.total_ht) as base_ht, SUM(dl.total_tva) as tva_amount
+    FROM documents d
+    JOIN document_lines dl ON dl.document_id = d.id
+    LEFT JOIN clients   c ON c.id = d.party_id AND d.party_type = 'client'
+    LEFT JOIN suppliers s ON s.id = d.party_id AND d.party_type = 'supplier'
+    ${where}
+    GROUP BY d.id, dl.tva_rate
+    ORDER BY d.date DESC
+  `).all(...params)
+}
+
+function getStockMovementsReport(db: any, filters: any) {
+  const params: any[] = []
+  let where = 'WHERE sm.applied = 1'
+  if (filters.product_id) { where += ' AND sm.product_id = ?'; params.push(filters.product_id) }
+  if (filters.start_date) { where += ' AND sm.date >= ?';      params.push(filters.start_date) }
+  if (filters.end_date)   { where += ' AND sm.date <= ?';      params.push(filters.end_date) }
+
+  return db.prepare(`
+    SELECT sm.date, sm.type, sm.quantity, sm.unit_cost,
+      sm.cmup_before, sm.cmup_after,
+      p.code as product_code, p.name as product_name, p.unit
+    FROM stock_movements sm
+    JOIN products p ON p.id = sm.product_id
+    ${where}
+    ORDER BY sm.date DESC, sm.id DESC
+  `).all(...params)
+}
+
+function getPaymentsReport(db: any, filters: any) {
+  const params: any[] = []
+  let where = 'WHERE 1=1'
+  if (filters.start_date) { where += ' AND p.date >= ?'; params.push(filters.start_date) }
+  if (filters.end_date)   { where += ' AND p.date <= ?'; params.push(filters.end_date) }
+  if (filters.party_type) { where += ' AND p.party_type = ?'; params.push(filters.party_type) }
+
+  return db.prepare(`
+    SELECT p.date, p.method, p.amount, p.status, p.cheque_number, p.bank, p.due_date,
+      CASE p.party_type WHEN 'client' THEN c.name WHEN 'supplier' THEN s.name END as party_name,
+      p.party_type,
+      d.number as document_number
+    FROM payments p
+    LEFT JOIN clients   c ON c.id = p.party_id AND p.party_type = 'client'
+    LEFT JOIN suppliers s ON s.id = p.party_id AND p.party_type = 'supplier'
+    LEFT JOIN documents d ON d.id = p.document_id
+    ${where}
+    ORDER BY p.date DESC
+  `).all(...params)
+}

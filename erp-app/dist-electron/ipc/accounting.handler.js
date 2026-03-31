@@ -1,0 +1,162 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.registerAccountingHandlers = registerAccountingHandlers;
+const index_1 = require("./index");
+const connection_1 = require("../database/connection");
+function registerAccountingHandlers() {
+    (0, index_1.handle)('accounting:getAccounts', (filters) => {
+        const db = (0, connection_1.getDb)();
+        let query = 'SELECT * FROM accounts WHERE is_active = 1';
+        const params = [];
+        if (filters?.search) {
+            query += ' AND (code LIKE ? OR name LIKE ?)';
+            const s = `%${filters.search}%`;
+            params.push(s, s);
+        }
+        if (filters?.class) {
+            query += ' AND class = ?';
+            params.push(filters.class);
+        }
+        query += ' ORDER BY code ASC';
+        return db.prepare(query).all(...params);
+    });
+    (0, index_1.handle)('accounting:getEntries', (filters) => {
+        const db = (0, connection_1.getDb)();
+        const page = filters?.page ?? 1;
+        const limit = filters?.limit ?? 50;
+        const offset = (page - 1) * limit;
+        const params = [];
+        let query = 'SELECT je.*, u.name as created_by_name FROM journal_entries je LEFT JOIN users u ON u.id = je.created_by WHERE 1=1';
+        if (filters?.period_id) {
+            query += ' AND je.period_id = ?';
+            params.push(filters.period_id);
+        }
+        if (filters?.source_type) {
+            query += ' AND je.source_type = ?';
+            params.push(filters.source_type);
+        }
+        if (filters?.start_date) {
+            query += ' AND je.date >= ?';
+            params.push(filters.start_date);
+        }
+        if (filters?.end_date) {
+            query += ' AND je.date <= ?';
+            params.push(filters.end_date);
+        }
+        query += ' ORDER BY je.date DESC, je.id DESC LIMIT ? OFFSET ?';
+        params.push(limit, offset);
+        const rows = db.prepare(query).all(...params);
+        // إضافة سطور كل قيد
+        return rows.map(entry => ({
+            ...entry,
+            lines: db.prepare(`
+        SELECT jl.*, a.code as account_code, a.name as account_name
+        FROM journal_lines jl JOIN accounts a ON a.id = jl.account_id
+        WHERE jl.entry_id = ?
+      `).all(entry.id),
+        }));
+    });
+    (0, index_1.handle)('accounting:getGrandLivre', (filters) => {
+        const db = (0, connection_1.getDb)();
+        const params = [filters.account_id];
+        let dateFilter = '';
+        if (filters.start_date) {
+            dateFilter += ' AND je.date >= ?';
+            params.push(filters.start_date);
+        }
+        if (filters.end_date) {
+            dateFilter += ' AND je.date <= ?';
+            params.push(filters.end_date);
+        }
+        const lines = db.prepare(`
+      SELECT jl.*, je.date, je.reference, je.description
+      FROM journal_lines jl
+      JOIN journal_entries je ON je.id = jl.entry_id
+      WHERE jl.account_id = ? ${dateFilter}
+      ORDER BY je.date ASC, je.id ASC
+    `).all(...params);
+        // رصيد تراكمي
+        let balance = 0;
+        return lines.map(line => {
+            balance += line.debit - line.credit;
+            return { ...line, balance };
+        });
+    });
+    (0, index_1.handle)('accounting:getBalance', (filters) => {
+        const db = (0, connection_1.getDb)();
+        const params = [];
+        let dateFilter = '';
+        if (filters?.start_date) {
+            dateFilter += ' AND je.date >= ?';
+            params.push(filters.start_date);
+        }
+        if (filters?.end_date) {
+            dateFilter += ' AND je.date <= ?';
+            params.push(filters.end_date);
+        }
+        return db.prepare(`
+      SELECT a.code, a.name, a.type, a.class,
+        COALESCE(SUM(jl.debit), 0)  as total_debit,
+        COALESCE(SUM(jl.credit), 0) as total_credit,
+        COALESCE(SUM(jl.debit), 0) - COALESCE(SUM(jl.credit), 0) as balance
+      FROM accounts a
+      LEFT JOIN journal_lines jl ON jl.account_id = a.id
+      LEFT JOIN journal_entries je ON je.id = jl.entry_id ${dateFilter ? 'AND 1=1' + dateFilter : ''}
+      WHERE a.is_active = 1
+      GROUP BY a.id
+      ORDER BY a.code ASC
+    `).all(...params);
+    });
+    (0, index_1.handle)('accounting:getTva', (filters) => {
+        const db = (0, connection_1.getDb)();
+        const collectee = db.prepare(`
+      SELECT jl.notes as tva_rate, SUM(jl.credit) as amount
+      FROM journal_lines jl
+      JOIN journal_entries je ON je.id = jl.entry_id
+      JOIN accounts a ON a.id = jl.account_id
+      WHERE a.code = '4455' AND je.date BETWEEN ? AND ?
+      GROUP BY jl.notes
+    `).all(filters.start_date, filters.end_date);
+        const recuperable = db.prepare(`
+      SELECT jl.notes as tva_rate, SUM(jl.debit) as amount
+      FROM journal_lines jl
+      JOIN journal_entries je ON je.id = jl.entry_id
+      JOIN accounts a ON a.id = jl.account_id
+      WHERE a.code = '3455' AND je.date BETWEEN ? AND ?
+      GROUP BY jl.notes
+    `).all(filters.start_date, filters.end_date);
+        const totalCollectee = collectee.reduce((s, r) => s + r.amount, 0);
+        const totalRecuperable = recuperable.reduce((s, r) => s + r.amount, 0);
+        return {
+            collectee,
+            recuperable,
+            totalCollectee,
+            totalRecuperable,
+            tvaDue: totalCollectee - totalRecuperable,
+        };
+    });
+    (0, index_1.handle)('accounting:getPeriods', () => {
+        const db = (0, connection_1.getDb)();
+        return db.prepare('SELECT * FROM accounting_periods ORDER BY start_date DESC').all();
+    });
+    (0, index_1.handle)('accounting:closePeriod', (id) => {
+        const db = (0, connection_1.getDb)();
+        db.prepare(`UPDATE accounting_periods SET status = 'closed', closed_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id);
+        return { success: true };
+    });
+    (0, index_1.handle)('accounting:createEntry', (data) => {
+        const db = (0, connection_1.getDb)();
+        const tx = db.transaction(() => {
+            const entry = db.prepare(`
+        INSERT INTO journal_entries (date, reference, description, is_auto, created_by)
+        VALUES (?, ?, ?, 0, ?)
+      `).run(data.date, data.reference ?? null, data.description, data.created_by ?? 1);
+            const entryId = entry.lastInsertRowid;
+            for (const line of data.lines) {
+                db.prepare('INSERT INTO journal_lines (entry_id, account_id, debit, credit, notes) VALUES (?, ?, ?, ?, ?)').run(entryId, line.account_id, line.debit ?? 0, line.credit ?? 0, line.notes ?? null);
+            }
+            return { id: entryId };
+        });
+        return tx();
+    });
+}
