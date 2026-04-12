@@ -1,8 +1,8 @@
 import { handle } from './index'
-import { app } from 'electron'
+import { app, dialog } from 'electron'
 import { join } from 'path'
-import { copyFileSync, readdirSync, statSync, unlinkSync } from 'fs'
-import { mkdirSync } from 'fs'
+import { copyFileSync, readdirSync, statSync, unlinkSync, existsSync, mkdirSync } from 'fs'
+import AdmZip from 'adm-zip'
 
 export function registerBackupHandlers(): void {
   handle('backup:create', () => {
@@ -48,10 +48,81 @@ export function registerBackupHandlers(): void {
   handle('backup:restore', (backupPath: string) => {
     const userData = app.getPath('userData')
     const dbPath = join(userData, 'erp.db')
-    // نسخ احتياطي قبل الاستعادة
     const safetyPath = join(userData, `erp-before-restore-${Date.now()}.db`)
     copyFileSync(dbPath, safetyPath)
     copyFileSync(backupPath, dbPath)
     return { success: true, safetyBackup: safetyPath }
+  })
+
+  // ── Export complet (DB + pièces jointes) → ZIP ──────────────────────────
+  handle('backup:exportFull', async () => {
+    const userData = app.getPath('userData')
+
+    const { filePath, canceled } = await dialog.showSaveDialog({
+      title: 'Exporter la sauvegarde complète',
+      defaultPath: `erp-export-${new Date().toISOString().slice(0,10)}.zip`,
+      filters: [{ name: 'Archive ERP', extensions: ['zip'] }],
+    })
+    if (canceled || !filePath) return { canceled: true }
+
+    const zip = new AdmZip()
+
+    // 1. Base de données
+    const dbPath = join(userData, 'erp.db')
+    if (existsSync(dbPath)) zip.addLocalFile(dbPath, '', 'erp.db')
+
+    // 2. Pièces jointes
+    const attachDir = join(userData, 'attachments')
+    if (existsSync(attachDir)) zip.addLocalFolder(attachDir, 'attachments')
+
+    // 3. Métadonnées
+    const meta = JSON.stringify({
+      version: app.getVersion(),
+      exportedAt: new Date().toISOString(),
+      platform: process.platform,
+    })
+    zip.addFile('meta.json', Buffer.from(meta, 'utf8'))
+
+    zip.writeZip(filePath)
+    return { success: true, path: filePath }
+  })
+
+  // ── Import complet depuis ZIP ────────────────────────────────────────────
+  handle('backup:importFull', async () => {
+    const userData = app.getPath('userData')
+
+    const { filePaths, canceled } = await dialog.showOpenDialog({
+      title: 'Importer une sauvegarde complète',
+      filters: [{ name: 'Archive ERP', extensions: ['zip'] }],
+      properties: ['openFile'],
+    })
+    if (canceled || !filePaths[0]) return { canceled: true }
+
+    const zip = new AdmZip(filePaths[0])
+    const entries = zip.getEntries().map(e => e.entryName)
+
+    // Vérifier que c'est bien une archive ERP
+    if (!entries.includes('erp.db')) {
+      throw new Error('Fichier invalide — ce n\'est pas une archive ERP valide')
+    }
+
+    // Sauvegarde de sécurité avant import
+    const dbPath = join(userData, 'erp.db')
+    if (existsSync(dbPath)) {
+      const safetyDir = join(userData, 'backups')
+      mkdirSync(safetyDir, { recursive: true })
+      copyFileSync(dbPath, join(safetyDir, `erp-before-import-${Date.now()}.db`))
+    }
+
+    // Extraire la DB
+    zip.extractEntryTo('erp.db', userData, false, true)
+
+    // Extraire les pièces jointes si présentes
+    const attachEntries = entries.filter(e => e.startsWith('attachments/'))
+    if (attachEntries.length > 0) {
+      zip.extractEntryTo('attachments/', userData, false, true)
+    }
+
+    return { success: true }
   })
 }

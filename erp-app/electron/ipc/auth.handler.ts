@@ -90,16 +90,16 @@ export function registerAuthHandlers(): void {
 
   handle('users:update', ({ id, name, email, role, is_active, password, permissions }) => {
     const db = getDb()
+    const activeVal = is_active ? 1 : 0
     const tx = db.transaction(() => {
       if (password) {
         db.prepare('UPDATE users SET name=?, email=?, role=?, is_active=?, password_hash=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
-          .run(name, email, role, is_active, hashPassword(password), id)
+          .run(name, email, role, activeVal, hashPassword(password), id)
       } else {
         db.prepare('UPDATE users SET name=?, email=?, role=?, is_active=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
-          .run(name, email, role, is_active, id)
+          .run(name, email, role, activeVal, id)
       }
 
-      // تحديث الصلاحيات
       if (Array.isArray(permissions)) {
         db.prepare('DELETE FROM user_permissions WHERE user_id = ?').run(id)
         for (const page of permissions) {
@@ -141,8 +141,17 @@ export function registerAuthHandlers(): void {
           WHEN 'suppliers' THEN (SELECT name FROM suppliers WHERE id = al.record_id)
           WHEN 'products'  THEN (SELECT name FROM products WHERE id = al.record_id)
           ELSE NULL
-        END as ref_label
-      FROM audit_log al WHERE al.user_id = ? ORDER BY al.created_at DESC LIMIT 10
+        END as ref_label,
+        CASE al.table_name
+          WHEN 'documents' THEN (SELECT type FROM documents WHERE id = al.record_id)
+          ELSE NULL
+        END as doc_type,
+        CASE al.table_name
+          WHEN 'clients'   THEN (SELECT name FROM clients WHERE id = al.record_id)
+          WHEN 'suppliers' THEN (SELECT name FROM suppliers WHERE id = al.record_id)
+          ELSE NULL
+        END as party_name
+      FROM audit_log al WHERE al.user_id = ? ORDER BY al.created_at DESC LIMIT 20
     `).all(userId) as any[]
 
     // إحصائيات المستندات التي أنشأها

@@ -10,6 +10,7 @@ import { migration_007_sessions } from './007_sessions'
 import { migration_008_constraints } from './008_constraints'
 import { migration_009_network_sync } from './009_network_sync'
 import { migration_010_change_tracking } from './010_change_tracking'
+import { migration_011_invoice_template } from './011_invoice_template'
 
 const MIGRATIONS = [
   { version: 1,  name: 'initial',             run: migration_001_initial },
@@ -23,6 +24,7 @@ const MIGRATIONS = [
   { version: 8,  name: 'constraints',         run: migration_008_constraints },
   { version: 9,  name: 'network_sync',        run: migration_009_network_sync },
   { version: 10, name: 'change_tracking',     run: migration_010_change_tracking },
+  { version: 11, name: 'invoice_template',    run: migration_011_invoice_template },
 ]
 
 export function runMigrations(db: Database.Database): void {

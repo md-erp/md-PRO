@@ -123,7 +123,8 @@ export function registerDocumentHandlers(): void {
     const userId = typeof data === 'number' ? 1    : (data.userId ?? 1)
     confirmDocument(id, userId)
     const db = getDb()
-    logAudit(db, { user_id: userId, action: 'CONFIRM', table_name: 'documents', record_id: id })
+    const confirmedDoc = db.prepare('SELECT number, type FROM documents WHERE id = ?').get(id) as any
+    logAudit(db, { user_id: userId, action: 'CONFIRM', table_name: 'documents', record_id: id, new_values: { number: confirmedDoc?.number, type: confirmedDoc?.type } })
 
     // Si c'est un BR, vérifier si le BC parent est entièrement reçu
     const confirmed = db.prepare('SELECT type FROM documents WHERE id = ?').get(id) as any
@@ -184,7 +185,7 @@ export function registerDocumentHandlers(): void {
     db.prepare(`UPDATE stock_movements SET applied = -1 WHERE document_id = ? AND applied = 0`).run(id)
 
     db.prepare(`UPDATE documents SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id)
-    logAudit(db, { user_id: 1, action: 'CANCEL', table_name: 'documents', record_id: id, old_values: { status: doc?.status } })
+    logAudit(db, { user_id: 1, action: 'CANCEL', table_name: 'documents', record_id: id, old_values: { status: doc?.status, number: doc?.number, type: doc?.type } })
 
     // Si c'est un BR, recalculer la statut du BC parent
     if (doc.type === 'bl_reception') {
@@ -393,7 +394,7 @@ export function registerDocumentHandlers(): void {
 
       // 5. Annuler le document
       db.prepare(`UPDATE documents SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id)
-      logAudit(db, { user_id: 1, action: 'CANCEL', table_name: 'documents', record_id: id, old_values: { status: doc.status } })
+      logAudit(db, { user_id: 1, action: 'CANCEL', table_name: 'documents', record_id: id, old_values: { status: doc.status, number: doc.number, type: doc.type } })
 
       // 6. Recalculer statut BC parent si BR
       if (doc.type === 'bl_reception') {

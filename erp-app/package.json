@@ -4,7 +4,7 @@
   "description": "ERP Comptabilité & Facturation — Desktop App",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on tcp:5174 && NODE_ENV=development VITE_PORT=5174 electron .\"",
+    "dev": "concurrently \"vite\" \"tsc -p tsconfig.electron.json --watch --noEmit false --skipLibCheck\" \"wait-on tcp:5174 && NODE_ENV=development VITE_PORT=5174 electron .\"",
     "postinstall": "electron-rebuild -f -w better-sqlite3 2>/dev/null || true",
     "build:renderer": "tsc && vite build",
     "build:electron": "tsc -p tsconfig.electron.json",
@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
+    "adm-zip": "^0.5.17",
     "better-sqlite3": "^9.4.3",
     "date-fns": "^3.6.0",
     "exceljs": "^4.4.0",
@@ -31,6 +32,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
     "@types/better-sqlite3": "^7.6.8",
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",

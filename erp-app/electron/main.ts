@@ -52,6 +52,7 @@ app.whenReady().then(async () => {
   initDatabase()
   registerAllHandlers()
 
+
   const config = getDeviceConfig()
 
   // تشغيل API server إذا كان Master
@@ -71,6 +72,8 @@ app.whenReady().then(async () => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+}).catch((err) => {
+  console.error('[App] Startup error:', err)
 })
 
 app.on('window-all-closed', () => {
@@ -172,9 +175,9 @@ function scheduleUpdateCheck(): void {
   const CHECK_INTERVAL = 60 * 60 * 1000 // كل ساعة
 
   // تحقق فوري عند البدء (بعد 10 ثوانٍ)
-  setTimeout(() => checkAndNotifyUpdate(), 10_000)
+  setTimeout(() => checkAndNotifyUpdate().catch((err) => console.error('[Update] Check error:', err)), 10_000)
 
-  updateCheckInterval = setInterval(() => checkAndNotifyUpdate(), CHECK_INTERVAL)
+  updateCheckInterval = setInterval(() => checkAndNotifyUpdate().catch((err) => console.error('[Update] Check error:', err)), CHECK_INTERVAL)
 }
 
 async function checkAndNotifyUpdate(): Promise<void> {

@@ -1,53 +1,196 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { api } from '../../lib/api'
 import { toast } from '../../components/ui/Toast'
 import Pagination from '../../components/ui/Pagination'
+import Drawer from '../../components/ui/Drawer'
 
-const ACTION_LABELS: Record<string, string> = {
-  CREATE: '➕ Création',
-  UPDATE: '✏️ Modification',
-  DELETE: '🗑️ Suppression',
-  CONFIRM: '✅ Confirmation',
-  CANCEL: '❌ Annulation',
-  LOGIN: '🔑 Connexion',
-  LOGOUT: '🚪 Déconnexion',
-  PAYMENT: '💳 Paiement',
-  APPLY_STOCK: '📦 Stock appliqué',
+const ACTION_LABELS: Record<string, { label: string; color: string; icon: string }> = {
+  CREATE:      { label: 'Création',       color: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',   icon: '➕' },
+  UPDATE:      { label: 'Modification',   color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',       icon: '✏️' },
+  DELETE:      { label: 'Suppression',    color: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',           icon: '🗑️' },
+  CONFIRM:     { label: 'Confirmation',   color: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',   icon: '✅' },
+  CANCEL:      { label: 'Annulation',     color: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',           icon: '❌' },
+  LOGIN:       { label: 'Connexion',      color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',          icon: '🔑' },
+  LOGOUT:      { label: 'Déconnexion',    color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',          icon: '🚪' },
+  PAYMENT:     { label: 'Paiement',       color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',   icon: '💳' },
+  APPLY_STOCK: { label: 'Stock appliqué', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300', icon: '📦' },
 }
 
-const ACTION_COLORS: Record<string, string> = {
-  CREATE: 'badge-green',
-  UPDATE: 'badge-blue',
-  DELETE: 'badge-red',
-  CONFIRM: 'badge-green',
-  CANCEL: 'badge-red',
-  LOGIN: 'badge-gray',
-  LOGOUT: 'badge-gray',
-  PAYMENT: 'badge-orange',
-  APPLY_STOCK: 'badge-blue',
+const DOC_TYPE_LABELS: Record<string, string> = {
+  invoice: 'Facture', quote: 'Devis', bl: 'Bon de Livraison',
+  proforma: 'Proforma', avoir: 'Avoir',
+  purchase_order: 'Bon de Commande', bl_reception: 'Bon de Réception',
+  purchase_invoice: 'Facture Fournisseur', import_invoice: 'Importation',
 }
 
+const TABLE_LABELS: Record<string, string> = {
+  documents: 'Document', payments: 'Paiement', clients: 'Client',
+  suppliers: 'Fournisseur', products: 'Produit', users: 'Utilisateur',
+  production_orders: 'Production', bom_templates: 'Nomenclature',
+}
+
+const FIELD_LABELS: Record<string, string> = {
+  status: 'Statut', amount: 'Montant', method: 'Mode de paiement',
+  name: 'Nom', email: 'Email', role: 'Rôle', is_active: 'Actif',
+  total_ht: 'Total HT', total_tva: 'TVA', total_ttc: 'Total TTC',
+  number: 'Numéro', type: 'Type', date: 'Date', notes: 'Notes',
+  party_id: 'Tiers', due_date: 'Échéance', payment_status: 'Statut paiement',
+  stock_quantity: 'Quantité stock', sale_price: 'Prix de vente',
+  cheque_number: 'N° Chèque', bank: 'Banque',
+}
+
+// ── Détail d'une entrée audit ────────────────────────────────────────────────
+function AuditDetail({ row }: { row: any }) {
+  const cfg = ACTION_LABELS[row.action] ?? { label: row.action, color: 'bg-gray-100 text-gray-600', icon: '•' }
+
+  const fmtDate = (d: string) =>
+    new Date(d.endsWith('Z') ? d : d + 'Z')
+      .toLocaleString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+
+  // بناء قائمة التغييرات المقارنة
+  const changes: { field: string; before: any; after: any }[] = []
+  if (row.old_values && row.new_values) {
+    const allKeys = new Set([...Object.keys(row.old_values), ...Object.keys(row.new_values)])
+    allKeys.forEach(k => {
+      const before = row.old_values[k]
+      const after  = row.new_values[k]
+      if (String(before) !== String(after)) {
+        changes.push({ field: k, before, after })
+      }
+    })
+  }
+
+  const fmtVal = (v: any) => {
+    if (v === null || v === undefined) return <span className="text-gray-300 italic">—</span>
+    if (typeof v === 'boolean') return v ? '✓ Oui' : '✗ Non'
+    if (v === 1 || v === 0) return v === 1 ? '✓ Oui' : '✗ Non'
+    return String(v)
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+
+      {/* En-tête */}
+      <div className="flex items-start gap-4">
+        <div className="text-3xl">{cfg.icon}</div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className={`text-sm px-3 py-1 rounded-full font-semibold ${cfg.color}`}>
+              {cfg.label}
+            </span>
+            {row.doc_type && (
+              <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 px-2 py-0.5 rounded font-medium uppercase">
+                {DOC_TYPE_LABELS[row.doc_type] ?? row.doc_type}
+              </span>
+            )}
+          </div>
+          {/* اسم الوثيقة/السجل — من ref_label أو new_values أو old_values */}
+          {(() => {
+            const label = row.ref_label
+              ?? row.new_values?.number
+              ?? row.old_values?.number
+              ?? row.new_values?.name
+              ?? row.old_values?.name
+            return label ? (
+              <div className="text-lg font-bold text-gray-800 dark:text-gray-100">{label}</div>
+            ) : null
+          })()}
+          {row.party_name && (
+            <div className="text-sm text-gray-500 mt-0.5">{row.party_name}</div>
+          )}
+        </div>
+      </div>
+
+      {/* Infos de base */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
+          <div className="text-xs text-gray-400 mb-1">Date & heure</div>
+          <div className="text-sm font-medium text-gray-700 dark:text-gray-200">
+            {fmtDate(row.created_at)}
+          </div>
+        </div>
+        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
+          <div className="text-xs text-gray-400 mb-1">Effectué par</div>
+          <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+            {row.user_name ?? '—'}
+          </div>
+        </div>
+        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
+          <div className="text-xs text-gray-400 mb-1">Module</div>
+          <div className="text-sm font-medium text-gray-700 dark:text-gray-200">
+            {TABLE_LABELS[row.table_name] ?? row.table_name}
+          </div>
+        </div>
+      </div>
+
+      {/* Changements comparés */}
+      {changes.length > 0 && (
+        <div>
+          <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
+            Modifications ({changes.length})
+          </div>
+          <div className="space-y-2">
+            {changes.map((c, i) => (
+              <div key={i} className="rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div className="bg-gray-50 dark:bg-gray-700/50 px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  {FIELD_LABELS[c.field] ?? c.field}
+                </div>
+                <div className="grid grid-cols-2 divide-x divide-gray-100 dark:divide-gray-700">
+                  <div className="px-3 py-2 bg-red-50 dark:bg-red-900/10">
+                    <div className="text-[10px] text-red-400 mb-0.5">Avant</div>
+                    <div className="text-xs text-red-700 dark:text-red-300 font-medium">{fmtVal(c.before)}</div>
+                  </div>
+                  <div className="px-3 py-2 bg-green-50 dark:bg-green-900/10">
+                    <div className="text-[10px] text-green-400 mb-0.5">Après</div>
+                    <div className="text-xs text-green-700 dark:text-green-300 font-medium">{fmtVal(c.after)}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Données brutes si pas de comparaison */}
+      {changes.length === 0 && (row.new_values || row.old_values) && (
+        <div>
+          <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Données</div>
+          <div className="space-y-2">
+            {Object.entries(row.new_values ?? row.old_values ?? {}).map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                <span className="text-xs text-gray-500">{FIELD_LABELS[k] ?? k}</span>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{fmtVal(v)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Raison si présente */}
+      {row.reason && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+          <div className="text-xs text-amber-600 font-semibold mb-1">Motif</div>
+          <div className="text-sm text-amber-800 dark:text-amber-300">{row.reason}</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Page principale ──────────────────────────────────────────────────────────
 export default function AuditSettings() {
-  const [rows, setRows]         = useState<any[]>([])
-  const [total, setTotal]       = useState(0)
-  const [page, setPage]         = useState(1)
-  const [loading, setLoading]   = useState(false)
-  const [users, setUsers]       = useState<any[]>([])
-  const [filters, setFilters]   = useState({
-    start_date: '', end_date: '', action: '', user_id: '',
-  })
-  const [expanded, setExpanded] = useState<number | null>(null)
+  const [rows, setRows]       = useState<any[]>([])
+  const [total, setTotal]     = useState(0)
+  const [page, setPage]       = useState(1)
+  const [loading, setLoading] = useState(false)
+  const [users, setUsers]     = useState<any[]>([])
+  const [filters, setFilters] = useState({ start_date: '', end_date: '', action: '', user_id: '' })
+  const [selected, setSelected] = useState<any | null>(null)
 
   const LIMIT = 50
 
-  useEffect(() => {
-    api.getAuditUsers().then(setUsers).catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [page])
-
+  useEffect(() => { api.getAuditUsers().then(setUsers).catch(() => {}) }, [])
+  useEffect(() => { load() }, [page])
   useEffect(() => {
     const h = () => { api.getAuditUsers().then(setUsers).catch(() => {}); load() }
     window.addEventListener('app:refresh', h)
@@ -60,8 +203,7 @@ export default function AuditSettings() {
       const result = await api.getAuditLog({
         ...filters,
         user_id: filters.user_id ? Number(filters.user_id) : undefined,
-        page,
-        limit: LIMIT,
+        page, limit: LIMIT,
       }) as any
       setRows(result.rows ?? [])
       setTotal(result.total ?? 0)
@@ -70,11 +212,6 @@ export default function AuditSettings() {
     } finally {
       setLoading(false)
     }
-  }
-
-  function handleSearch() {
-    setPage(1)
-    load()
   }
 
   return (
@@ -102,7 +239,7 @@ export default function AuditSettings() {
             className="input w-40">
             <option value="">Toutes</option>
             {Object.entries(ACTION_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
+              <option key={k} value={k}>{v.icon} {v.label}</option>
             ))}
           </select>
         </div>
@@ -117,12 +254,9 @@ export default function AuditSettings() {
             ))}
           </select>
         </div>
-        <button onClick={handleSearch} className="btn-primary btn-sm">
-          🔍 Filtrer
-        </button>
-        <button onClick={() => { setFilters({ start_date: '', end_date: '', action: '', user_id: '' }); setPage(1); }} className="btn-secondary btn-sm">
-          ✕ Réinitialiser
-        </button>
+        <button onClick={() => { setPage(1); load() }} className="btn-primary btn-sm">🔍 Filtrer</button>
+        <button onClick={() => { setFilters({ start_date: '', end_date: '', action: '', user_id: '' }); setPage(1) }}
+          className="btn-secondary btn-sm">✕ Réinitialiser</button>
         <span className="text-xs text-gray-400 ml-auto">{total} entrée(s)</span>
       </div>
 
@@ -140,71 +274,69 @@ export default function AuditSettings() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-700/50">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Date</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Utilisateur</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Action</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Table</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">ID</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Détails</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Utilisateur</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Concerne</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {rows.map((row: any) => (
-                  <>
-                    <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                      <td className="px-4 py-2 text-xs text-gray-500 whitespace-nowrap">
+                {rows.map((row: any) => {
+                  const cfg = ACTION_LABELS[row.action] ?? { label: row.action, color: 'bg-gray-100 text-gray-600', icon: '•' }
+                  const hasDetail = row.new_values || row.old_values || row.reason
+                  return (
+                    <tr key={row.id}
+                      onClick={() => hasDetail && setSelected(row)}
+                      className={`transition-colors ${hasDetail ? 'cursor-pointer hover:bg-primary/5 dark:hover:bg-primary/10' : 'hover:bg-gray-50 dark:hover:bg-gray-700/30'}`}>
+                      <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
                         {new Date(row.created_at).toLocaleString('fr-FR')}
                       </td>
-                      <td className="px-4 py-2 font-medium">{row.user_name ?? '—'}</td>
-                      <td className="px-4 py-2">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ACTION_COLORS[row.action] ?? 'badge-gray'}`}>
-                          {ACTION_LABELS[row.action] ?? row.action}
+                      <td className="px-4 py-3 font-medium text-sm">{row.user_name ?? '—'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.color}`}>
+                          {cfg.icon} {cfg.label}
                         </span>
                       </td>
-                      <td className="px-4 py-2 font-mono text-xs text-gray-500">{row.table_name}</td>
-                      <td className="px-4 py-2 text-xs text-gray-400">{row.record_id ?? '—'}</td>
-                      <td className="px-4 py-2">
-                        {(row.new_values || row.old_values) && (
-                          <button
-                            onClick={() => setExpanded(expanded === row.id ? null : row.id)}
-                            className="text-xs text-primary hover:underline">
-                            {expanded === row.id ? '▲ Masquer' : '▼ Voir'}
-                          </button>
+                      <td className="px-4 py-3 text-xs">
+                        {row.ref_label ? (
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-1.5">
+                              {row.doc_type && (
+                                <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 px-1.5 py-0.5 rounded font-medium uppercase tracking-wide">
+                                  {DOC_TYPE_LABELS[row.doc_type] ?? row.doc_type}
+                                </span>
+                              )}
+                              <span className="font-semibold text-gray-800 dark:text-gray-100">{row.ref_label}</span>
+                              {hasDetail && <span className="text-primary text-[10px] ml-1">→ détails</span>}
+                            </div>
+                            {row.party_name && (
+                              <span className="text-gray-400 text-[11px]">{row.party_name}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 italic">
+                            {TABLE_LABELS[row.table_name] ?? row.table_name}
+                            {hasDetail && <span className="text-primary ml-1 not-italic">→ détails</span>}
+                          </span>
                         )}
                       </td>
                     </tr>
-                    {expanded === row.id && (
-                      <tr key={`${row.id}-detail`} className="bg-gray-50 dark:bg-gray-800/50">
-                        <td colSpan={6} className="px-4 py-3">
-                          <div className="grid grid-cols-2 gap-4 text-xs">
-                            {row.old_values && (
-                              <div>
-                                <div className="font-semibold text-red-500 mb-1">Avant</div>
-                                <pre className="bg-red-50 dark:bg-red-900/10 p-2 rounded text-gray-600 dark:text-gray-300 overflow-auto max-h-32">
-                                  {JSON.stringify(row.old_values, null, 2)}
-                                </pre>
-                              </div>
-                            )}
-                            {row.new_values && (
-                              <div>
-                                <div className="font-semibold text-green-500 mb-1">Après</div>
-                                <pre className="bg-green-50 dark:bg-green-900/10 p-2 rounded text-gray-600 dark:text-gray-300 overflow-auto max-h-32">
-                                  {JSON.stringify(row.new_values, null, 2)}
-                                </pre>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
             <Pagination page={page} total={total} limit={LIMIT} onChange={setPage} />
           </>
         )}
       </div>
+
+      {/* Drawer détail */}
+      <Drawer
+        open={selected !== null}
+        onClose={() => setSelected(null)}
+        title="Détail de l'événement">
+        {selected && <AuditDetail row={selected} />}
+      </Drawer>
     </div>
   )
 }

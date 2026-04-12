@@ -64,7 +64,37 @@ export function getAuditLog(db: Database.Database, filters: AuditFilters = {}): 
   if (filters.end_date)   { where += ' AND al.created_at <= ?'; params.push(filters.end_date + ' 23:59:59') }
 
   const rows = db.prepare(`
-    SELECT al.*, u.name as user_name
+    SELECT
+      al.*,
+      u.name as user_name,
+      CASE al.table_name
+        WHEN 'documents' THEN (SELECT number FROM documents WHERE id = al.record_id)
+        WHEN 'payments'  THEN (SELECT method || ' - ' || CAST(CAST(amount AS INTEGER) AS TEXT) || ' MAD' FROM payments WHERE id = al.record_id)
+        WHEN 'clients'   THEN (SELECT name FROM clients   WHERE id = al.record_id)
+        WHEN 'suppliers' THEN (SELECT name FROM suppliers WHERE id = al.record_id)
+        WHEN 'products'  THEN (SELECT name FROM products  WHERE id = al.record_id)
+        WHEN 'users'     THEN (SELECT name FROM users     WHERE id = al.record_id)
+        ELSE NULL
+      END as ref_label,
+      CASE al.table_name
+        WHEN 'documents' THEN (SELECT type FROM documents WHERE id = al.record_id)
+        ELSE NULL
+      END as doc_type,
+      CASE al.table_name
+        WHEN 'documents' THEN (
+          SELECT COALESCE(
+            (SELECT c.name FROM clients c WHERE c.id = d.party_id AND d.party_type = 'client'),
+            (SELECT s.name FROM suppliers s WHERE s.id = d.party_id AND d.party_type = 'supplier')
+          ) FROM documents d WHERE d.id = al.record_id
+        )
+        WHEN 'payments' THEN (
+          SELECT COALESCE(
+            (SELECT c.name FROM clients c WHERE c.id = p.party_id AND p.party_type = 'client'),
+            (SELECT s.name FROM suppliers s WHERE s.id = p.party_id AND p.party_type = 'supplier')
+          ) FROM payments p WHERE p.id = al.record_id
+        )
+        ELSE NULL
+      END as party_name
     FROM audit_log al
     LEFT JOIN users u ON u.id = al.user_id
     ${where}
@@ -77,11 +107,19 @@ export function getAuditLog(db: Database.Database, filters: AuditFilters = {}): 
   `).get(...params) as any).c
 
   return {
-    rows: rows.map(r => ({
-      ...r,
-      old_values: r.old_values ? JSON.parse(r.old_values) : null,
-      new_values: r.new_values ? JSON.parse(r.new_values) : null,
-    })),
+    rows: rows.map(r => {
+      const newVals = r.new_values ? (() => { try { return JSON.parse(r.new_values) } catch { return null } })() : null
+      const oldVals = r.old_values ? (() => { try { return JSON.parse(r.old_values) } catch { return null } })() : null
+
+      let ref_label = r.ref_label
+      let doc_type  = r.doc_type
+      if (!ref_label && r.table_name === 'documents' && newVals?.number) {
+        ref_label = newVals.number
+        doc_type  = doc_type ?? newVals.type ?? null
+      }
+
+      return { ...r, ref_label, doc_type, old_values: oldVals, new_values: newVals }
+    }),
     total,
     page,
     limit,

@@ -1,18 +1,180 @@
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '../../lib/api'
+import { toast } from '../../components/ui/Toast'
 import Pagination from '../../components/ui/Pagination'
+import Modal from '../../components/ui/Modal'
+import { useAuthStore } from '../../store/auth.store'
 import type { JournalEntry } from '../../types'
 
 const LIMIT = 50
 
+// ── Formulaire de saisie manuelle ────────────────────────────────────────────
+function ManualEntryForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: () => void }) {
+  const { user } = useAuthStore()
+  const [accounts, setAccounts] = useState<any[]>([])
+  const [date, setDate]         = useState(new Date().toISOString().split('T')[0])
+  const [ref, setRef]           = useState('')
+  const [desc, setDesc]         = useState('')
+  const [lines, setLines]       = useState([
+    { account_id: '', debit: '', credit: '', notes: '' },
+    { account_id: '', debit: '', credit: '', notes: '' },
+  ])
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    api.getAccounts().then((r: any) => setAccounts(r ?? [])).catch(() => {})
+  }, [])
+
+  function addLine() {
+    setLines(l => [...l, { account_id: '', debit: '', credit: '', notes: '' }])
+  }
+
+  function removeLine(i: number) {
+    if (lines.length <= 2) return
+    setLines(l => l.filter((_, idx) => idx !== i))
+  }
+
+  function updateLine(i: number, field: string, value: string) {
+    setLines(l => l.map((line, idx) => idx === i ? { ...line, [field]: value } : line))
+  }
+
+  const totalDebit  = lines.reduce((s, l) => s + (parseFloat(l.debit)  || 0), 0)
+  const totalCredit = lines.reduce((s, l) => s + (parseFloat(l.credit) || 0), 0)
+  const isBalanced  = Math.abs(totalDebit - totalCredit) < 0.01
+  const fmt = (n: number) => new Intl.NumberFormat('fr-MA', { minimumFractionDigits: 2 }).format(n)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!desc.trim()) { toast('Description obligatoire', 'error'); return }
+    if (!isBalanced)  { toast('Le journal doit être équilibré (Débit = Crédit)', 'error'); return }
+    const validLines = lines.filter(l => l.account_id && (parseFloat(l.debit) > 0 || parseFloat(l.credit) > 0))
+    if (validLines.length < 2) { toast('Minimum 2 lignes avec montants', 'error'); return }
+
+    setSaving(true)
+    try {
+      await api.createManualEntry({
+        date, reference: ref || null, description: desc,
+        created_by: user?.id ?? 1,
+        lines: validLines.map(l => ({
+          account_id: Number(l.account_id),
+          debit:  parseFloat(l.debit)  || 0,
+          credit: parseFloat(l.credit) || 0,
+          notes:  l.notes || null,
+        })),
+      })
+      toast('Écriture enregistrée')
+      onSaved()
+    } catch (e: any) {
+      toast(e.message, 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 p-1">
+      {/* En-tête */}
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Date *</label>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} className="input" required />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Référence</label>
+          <input value={ref} onChange={e => setRef(e.target.value)} className="input" placeholder="OD-001" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Description *</label>
+          <input value={desc} onChange={e => setDesc(e.target.value)} className="input" placeholder="Ex: Salaires mars" required />
+        </div>
+      </div>
+
+      {/* Lignes */}
+      <div className="overflow-auto">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-gray-50 dark:bg-gray-700/50">
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Compte *</th>
+              <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 w-28">Débit</th>
+              <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 w-28">Crédit</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Libellé</th>
+              <th className="w-8"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+            {lines.map((line, i) => (
+              <tr key={i}>
+                <td className="px-2 py-1.5">
+                  <select value={line.account_id} onChange={e => updateLine(i, 'account_id', e.target.value)}
+                    className="input text-xs w-full">
+                    <option value="">— Choisir —</option>
+                    {accounts.map((a: any) => (
+                      <option key={a.id} value={a.id}>{a.code} — {a.name}</option>
+                    ))}
+                  </select>
+                </td>
+                <td className="px-2 py-1.5">
+                  <input type="number" min="0" step="0.01" value={line.debit}
+                    onChange={e => updateLine(i, 'debit', e.target.value)}
+                    className="input text-xs text-right w-full"
+                    placeholder="0.00" />
+                </td>
+                <td className="px-2 py-1.5">
+                  <input type="number" min="0" step="0.01" value={line.credit}
+                    onChange={e => updateLine(i, 'credit', e.target.value)}
+                    className="input text-xs text-right w-full"
+                    placeholder="0.00" />
+                </td>
+                <td className="px-2 py-1.5">
+                  <input value={line.notes} onChange={e => updateLine(i, 'notes', e.target.value)}
+                    className="input text-xs w-full" placeholder="Libellé ligne" />
+                </td>
+                <td className="px-2 py-1.5 text-center">
+                  <button type="button" onClick={() => removeLine(i)}
+                    className="text-gray-300 hover:text-red-500 transition-colors text-base leading-none">
+                    ×
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className={`font-semibold text-sm ${isBalanced ? 'text-green-600' : 'text-red-500'}`}>
+              <td className="px-3 py-2 text-xs text-gray-500">
+                <button type="button" onClick={addLine} className="text-primary hover:underline text-xs">
+                  + Ajouter une ligne
+                </button>
+              </td>
+              <td className="px-3 py-2 text-right">{fmt(totalDebit)}</td>
+              <td className="px-3 py-2 text-right">{fmt(totalCredit)}</td>
+              <td colSpan={2} className="px-3 py-2 text-xs">
+                {isBalanced ? '✓ Équilibré' : `Écart: ${fmt(Math.abs(totalDebit - totalCredit))}`}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div className="flex gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+        <button type="button" onClick={onCancel} className="btn-secondary flex-1 justify-center">Annuler</button>
+        <button type="submit" disabled={saving || !isBalanced}
+          className="btn-primary flex-1 justify-center disabled:opacity-50">
+          {saving ? '...' : '✅ Enregistrer'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 export default function JournalView() {
-  const [entries, setEntries] = useState<JournalEntry[]>([])
-  const [total, setTotal]     = useState(0)
-  const [page, setPage]       = useState(1)
-  const [loading, setLoading] = useState(false)
+  const [entries, setEntries]   = useState<JournalEntry[]>([])
+  const [total, setTotal]       = useState(0)
+  const [page, setPage]         = useState(1)
+  const [loading, setLoading]   = useState(false)
   const [expanded, setExpanded] = useState<number | null>(null)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate]     = useState('')
+  const [showModal, setShowModal] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -58,6 +220,9 @@ export default function JournalView() {
         </div>
         <button onClick={load} className="btn-secondary btn-sm">↻ Actualiser</button>
         <span className="text-sm text-gray-500 ml-auto">{total} écriture(s)</span>
+        <button onClick={() => setShowModal(true)} className="btn-primary btn-sm">
+          + Saisie manuelle
+        </button>
       </div>
 
       {/* Entries */}
@@ -137,6 +302,14 @@ export default function JournalView() {
       </div>
 
       <Pagination page={page} total={total} limit={LIMIT} onChange={setPage} />
+
+      <Modal open={showModal} onClose={() => setShowModal(false)}
+        title="Saisie d'écriture manuelle" size="xl">
+        <ManualEntryForm
+          onSaved={() => { setShowModal(false); load() }}
+          onCancel={() => setShowModal(false)}
+        />
+      </Modal>
     </div>
   )
 }

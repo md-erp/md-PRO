@@ -6,9 +6,11 @@ import UsersSettings from './UsersSettings'
 import BackupSettings from './BackupSettings'
 import LicenseSettings from './LicenseSettings'
 import AuditSettings from './AuditSettings'
+import InvoiceTemplateSettings from './InvoiceTemplateSettings'
 
 const SECTIONS = [
   { id: 'company',  label: 'Entreprise',       icon: '🏢' },
+  { id: 'template', label: 'Modèle document',  icon: '🎨' },
   { id: 'network',  label: 'Réseau',            icon: '🌐' },
   { id: 'users',    label: 'Utilisateurs',      icon: '👥' },
   { id: 'backup',   label: 'Sauvegarde',        icon: '💾' },
@@ -42,6 +44,7 @@ export default function ParamsPage() {
       {/* Content */}
       <div className="flex-1 overflow-auto p-6">
         {section === 'company'  && <CompanySettings />}
+        {section === 'template' && <InvoiceTemplateSettings />}
         {section === 'network'  && <NetworkSettings />}
         {section === 'users'    && <UsersSettings isAdmin={isAdmin} />}
         {section === 'backup'   && <BackupSettings />}

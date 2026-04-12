@@ -9,6 +9,10 @@ const _005_fix_document_status_1 = require("./005_fix_document_status");
 const _006_user_permissions_1 = require("./006_user_permissions");
 const _007_user_sessions_1 = require("./007_user_sessions");
 const _007_sessions_1 = require("./007_sessions");
+const _008_constraints_1 = require("./008_constraints");
+const _009_network_sync_1 = require("./009_network_sync");
+const _010_change_tracking_1 = require("./010_change_tracking");
+const _011_invoice_template_1 = require("./011_invoice_template");
 const MIGRATIONS = [
     { version: 1, name: 'initial', run: _001_initial_1.migration_001_initial },
     { version: 2, name: 'accounting', run: _002_accounting_1.migration_002_accounting },
@@ -17,7 +21,11 @@ const MIGRATIONS = [
     { version: 5, name: 'fix_document_status', run: _005_fix_document_status_1.migration_005_fix_document_status },
     { version: 6, name: 'user_permissions', run: _006_user_permissions_1.migration_006_user_permissions },
     { version: 7, name: 'user_sessions', run: _007_user_sessions_1.migration_007_user_sessions },
-    { version: 7, name: 'sessions', run: _007_sessions_1.migration_007_sessions },
+    { version: 71, name: 'sessions', run: _007_sessions_1.migration_007_sessions },
+    { version: 8, name: 'constraints', run: _008_constraints_1.migration_008_constraints },
+    { version: 9, name: 'network_sync', run: _009_network_sync_1.migration_009_network_sync },
+    { version: 10, name: 'change_tracking', run: _010_change_tracking_1.migration_010_change_tracking },
+    { version: 11, name: 'invoice_template', run: _011_invoice_template_1.migration_011_invoice_template },
 ];
 function runMigrations(db) {
     // جدول تتبع الإصدارات

@@ -10,7 +10,7 @@ const api = {
 
   // --- Auth ---
   login:              (data: unknown) => ipcRenderer.invoke('auth:login', data),
-  logout:             ()       => ipcRenderer.invoke('auth:logout'),
+  logout:             (data?: unknown) => ipcRenderer.invoke('auth:logout', data),
   getUsers:           ()       => ipcRenderer.invoke('users:getAll'),
   createUser:         (data: unknown) => ipcRenderer.invoke('users:create', data),
   updateUser:         (data: unknown) => ipcRenderer.invoke('users:update', data),
@@ -107,6 +107,8 @@ const api = {
   createBackup:       ()       => ipcRenderer.invoke('backup:create'),
   restoreBackup:      (path: string) => ipcRenderer.invoke('backup:restore', path),
   listBackups:        ()       => ipcRenderer.invoke('backup:list'),
+  exportFull:         ()       => ipcRenderer.invoke('backup:exportFull'),
+  importFull:         ()       => ipcRenderer.invoke('backup:importFull'),
 
   // --- PDF ---
   pdfGetHtml:         (id: number)  => ipcRenderer.invoke('pdf:getHtml', id),

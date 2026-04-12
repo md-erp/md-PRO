@@ -8,8 +8,21 @@ const crypto_1 = __importDefault(require("crypto"));
 const index_1 = require("./index");
 const connection_1 = require("../database/connection");
 const audit_service_1 = require("../services/audit.service");
-function hashPassword(password) {
-    return crypto_1.default.createHash('sha256').update(password).digest('hex');
+// SHA256 + salt per-user (salt مخزون مع الـ hash بصيغة salt:hash)
+function hashPassword(password, salt) {
+    const s = salt ?? crypto_1.default.randomBytes(16).toString('hex');
+    const hash = crypto_1.default.createHash('sha256').update(s + password).digest('hex');
+    return `${s}:${hash}`;
+}
+function verifyPassword(password, stored) {
+    // دعم الصيغة القديمة (hash فقط بدون salt) للتوافق مع البيانات الموجودة
+    if (!stored.includes(':')) {
+        const legacyHash = crypto_1.default.createHash('sha256').update(password).digest('hex');
+        return legacyHash === stored;
+    }
+    const [salt, hash] = stored.split(':');
+    const computed = crypto_1.default.createHash('sha256').update(salt + password).digest('hex');
+    return computed === hash;
 }
 function registerAuthHandlers() {
     (0, index_1.handle)('auth:login', ({ email, password }) => {
@@ -20,7 +33,7 @@ function registerAuthHandlers() {
         const user = db.prepare('SELECT * FROM users WHERE email = ? AND is_active = 1').get(email.trim().toLowerCase());
         if (!user)
             throw new Error('Aucun compte trouvé avec cet email');
-        if (user.password_hash !== hashPassword(password))
+        if (!verifyPassword(password, user.password_hash))
             throw new Error('Mot de passe incorrect');
         db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
         (0, audit_service_1.logAudit)(db, { user_id: user.id, action: 'LOGIN', table_name: 'users', record_id: user.id });
@@ -45,8 +58,8 @@ function registerAuthHandlers() {
         if (!name?.trim() || !email?.trim() || !password?.trim()) {
             throw new Error('Nom, email et mot de passe sont obligatoires');
         }
-        if (password.length < 4) {
-            throw new Error('Le mot de passe doit contenir au moins 4 caractères');
+        if (password.length < 6) {
+            throw new Error('Le mot de passe doit contenir au moins 6 caractères');
         }
         const tx = db.transaction(() => {
             const result = db.prepare(`
@@ -67,16 +80,16 @@ function registerAuthHandlers() {
     });
     (0, index_1.handle)('users:update', ({ id, name, email, role, is_active, password, permissions }) => {
         const db = (0, connection_1.getDb)();
+        const activeVal = is_active ? 1 : 0;
         const tx = db.transaction(() => {
             if (password) {
                 db.prepare('UPDATE users SET name=?, email=?, role=?, is_active=?, password_hash=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
-                    .run(name, email, role, is_active, hashPassword(password), id);
+                    .run(name, email, role, activeVal, hashPassword(password), id);
             }
             else {
                 db.prepare('UPDATE users SET name=?, email=?, role=?, is_active=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
-                    .run(name, email, role, is_active, id);
+                    .run(name, email, role, activeVal, id);
             }
-            // تحديث الصلاحيات
             if (Array.isArray(permissions)) {
                 db.prepare('DELETE FROM user_permissions WHERE user_id = ?').run(id);
                 for (const page of permissions) {
@@ -114,8 +127,17 @@ function registerAuthHandlers() {
           WHEN 'suppliers' THEN (SELECT name FROM suppliers WHERE id = al.record_id)
           WHEN 'products'  THEN (SELECT name FROM products WHERE id = al.record_id)
           ELSE NULL
-        END as ref_label
-      FROM audit_log al WHERE al.user_id = ? ORDER BY al.created_at DESC LIMIT 10
+        END as ref_label,
+        CASE al.table_name
+          WHEN 'documents' THEN (SELECT type FROM documents WHERE id = al.record_id)
+          ELSE NULL
+        END as doc_type,
+        CASE al.table_name
+          WHEN 'clients'   THEN (SELECT name FROM clients WHERE id = al.record_id)
+          WHEN 'suppliers' THEN (SELECT name FROM suppliers WHERE id = al.record_id)
+          ELSE NULL
+        END as party_name
+      FROM audit_log al WHERE al.user_id = ? ORDER BY al.created_at DESC LIMIT 20
     `).all(userId);
         // إحصائيات المستندات التي أنشأها
         const docsCreated = db.prepare('SELECT COUNT(*) as c FROM documents WHERE created_by = ? AND is_deleted = 0').get(userId).c;

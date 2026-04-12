@@ -129,7 +129,8 @@ function registerDocumentHandlers() {
         const userId = typeof data === 'number' ? 1 : (data.userId ?? 1);
         (0, document_service_1.confirmDocument)(id, userId);
         const db = (0, connection_1.getDb)();
-        (0, audit_service_1.logAudit)(db, { user_id: userId, action: 'CONFIRM', table_name: 'documents', record_id: id });
+        const confirmedDoc = db.prepare('SELECT number, type FROM documents WHERE id = ?').get(id);
+        (0, audit_service_1.logAudit)(db, { user_id: userId, action: 'CONFIRM', table_name: 'documents', record_id: id, new_values: { number: confirmedDoc?.number, type: confirmedDoc?.type } });
         // Si c'est un BR, vérifier si le BC parent est entièrement reçu
         const confirmed = db.prepare('SELECT type FROM documents WHERE id = ?').get(id);
         if (confirmed?.type === 'bl_reception') {
@@ -186,7 +187,7 @@ function registerDocumentHandlers() {
         // Annuler les mouvements de stock en attente liés à ce document
         db.prepare(`UPDATE stock_movements SET applied = -1 WHERE document_id = ? AND applied = 0`).run(id);
         db.prepare(`UPDATE documents SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id);
-        (0, audit_service_1.logAudit)(db, { user_id: 1, action: 'CANCEL', table_name: 'documents', record_id: id, old_values: { status: doc?.status } });
+        (0, audit_service_1.logAudit)(db, { user_id: 1, action: 'CANCEL', table_name: 'documents', record_id: id, old_values: { status: doc?.status, number: doc?.number, type: doc?.type } });
         // Si c'est un BR, recalculer la statut du BC parent
         if (doc.type === 'bl_reception') {
             const poLink = db.prepare(`SELECT parent_id FROM document_links WHERE child_id = ? AND link_type LIKE '%reception%'`).get(id);
@@ -374,7 +375,7 @@ function registerDocumentHandlers() {
             }
             // 5. Annuler le document
             db.prepare(`UPDATE documents SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id);
-            (0, audit_service_1.logAudit)(db, { user_id: 1, action: 'CANCEL', table_name: 'documents', record_id: id, old_values: { status: doc.status } });
+            (0, audit_service_1.logAudit)(db, { user_id: 1, action: 'CANCEL', table_name: 'documents', record_id: id, old_values: { status: doc.status, number: doc.number, type: doc.type } });
             // 6. Recalculer statut BC parent si BR
             if (doc.type === 'bl_reception') {
                 const poLink = db.prepare(`SELECT parent_id FROM document_links WHERE child_id = ? AND link_type LIKE '%reception%'`).get(id);

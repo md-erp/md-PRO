@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useAuthStore, getSessionStart } from '../store/auth.store'
+import { useAuthStore } from '../store/auth.store'
 import { useAppStore } from '../store/app.store'
 import NotificationCenter from '../components/NotificationCenter'
 import SyncStatusBar from '../components/SyncStatusBar'
@@ -7,6 +7,8 @@ import { canAccess } from '../lib/permissions'
 import { api } from '../lib/api'
 import { emitRefresh } from '../lib/refresh'
 import ErrorBoundary from '../components/ErrorBoundary'
+import Modal from '../components/ui/Modal'
+import { toast } from '../components/ui/Toast'
 
 // Pages
 import DocumentsPage   from './documents/DocumentsPage'
@@ -33,27 +35,41 @@ const NAV_ITEMS = [
 type NavId = typeof NAV_ITEMS[number]['id'] | 'parametres'
 
 export default function MainLayout() {
-  const [activeNav, setActiveNav] = useState<NavId>('rapports')
-  const [refreshing, setRefreshing] = useState(false)
-  const [sessionTime, setSessionTime] = useState(0)
   const { user, logout } = useAuthStore()
   const { theme, toggleTheme } = useAppStore()
 
-  useEffect(() => {
-    const start = getSessionStart()
-    if (!start) return
-    const update = () => setSessionTime(Math.floor((Date.now() - start) / 1000))
-    update()
-    const interval = setInterval(update, 1000)
-    return () => clearInterval(interval)
-  }, [])
+  const firstAllowed = NAV_ITEMS.find(item => canAccess(user, item.id))?.id ?? 'rapports'
+  const [activeNav, setActiveNav] = useState<NavId>(firstAllowed)
 
-  function fmtTime(s: number) {
-    const h = Math.floor(s / 3600)
-    const m = Math.floor((s % 3600) / 60)
-    const sec = s % 60
-    if (h > 0) return `${h}h ${String(m).padStart(2,'0')}m`
-    return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
+  const [refreshing, setRefreshing] = useState(false)
+  const [showPwModal, setShowPwModal] = useState(false)
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' })
+  const [pwSaving, setPwSaving] = useState(false)
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (pwForm.next !== pwForm.confirm) { toast('Les mots de passe ne correspondent pas', 'error'); return }
+    if (pwForm.next.length < 6) { toast('Minimum 6 caractères', 'error'); return }
+    setPwSaving(true)
+    try {
+      await api.login({ email: user!.email, password: pwForm.current })
+      await api.updateUser({
+        id: user!.id,
+        name: user!.name,
+        email: user!.email,
+        role: user!.role,
+        is_active: 1,
+        password: pwForm.next,
+        permissions: (user as any).permissions ?? [],
+      })
+      toast('Mot de passe modifié avec succès')
+      setShowPwModal(false)
+      setPwForm({ current: '', next: '', confirm: '' })
+    } catch (e: any) {
+      toast(e.message?.includes('incorrect') ? 'Mot de passe actuel incorrect' : e.message, 'error')
+    } finally {
+      setPwSaving(false)
+    }
   }
 
   function handleRefresh() {
@@ -123,13 +139,17 @@ export default function MainLayout() {
           </div>
           <div className="hidden xl:flex flex-col items-start">
             <span className="text-xs font-medium text-white leading-tight">{user?.name}</span>
-            {sessionTime > 0 && (
-              <span className="text-[10px] text-primary-100 font-mono leading-tight">⏱ {fmtTime(sessionTime)}</span>
-            )}
+            <span className="text-[10px] text-primary-100 leading-tight">{user?.role}</span>
           </div>
+          <button
+            onClick={() => setShowPwModal(true)}
+            title="Changer le mot de passe"
+            className="p-1.5 rounded-lg hover:bg-white/10 text-primary-100 text-sm">
+            🔒
+          </button>
           <button onClick={async () => {
               const store = useAuthStore.getState()
-              await api.logout({ userId: store.user?.id, sessionId: store.sessionId } as any).catch(() => {})
+              await api.logout({ userId: store.user?.id, sessionId: store.sessionId }).catch(() => {})
               logout()
             }}
             className="text-xs text-primary-100 hover:text-white ml-1">
@@ -155,6 +175,43 @@ export default function MainLayout() {
         </ErrorBoundary>
       </main>
       <SyncStatusBar />
+
+      {/* Modal — Changer mot de passe */}
+      <Modal open={showPwModal} onClose={() => { setShowPwModal(false); setPwForm({ current: '', next: '', confirm: '' }) }}
+        title="Changer le mot de passe" size="sm">
+        <form onSubmit={handleChangePassword} className="p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Mot de passe actuel</label>
+            <input type="password" value={pwForm.current}
+              onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))}
+              className="input" placeholder="••••••••" required autoFocus autoComplete="current-password" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Nouveau mot de passe</label>
+            <input type="password" value={pwForm.next}
+              onChange={e => setPwForm(f => ({ ...f, next: e.target.value }))}
+              className="input" placeholder="Min. 6 caractères" required autoComplete="new-password" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Confirmer</label>
+            <input type="password" value={pwForm.confirm}
+              onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
+              className={`input ${pwForm.confirm && pwForm.confirm !== pwForm.next ? 'border-red-400' : ''}`}
+              placeholder="••••••••" required autoComplete="new-password" />
+            {pwForm.confirm && pwForm.confirm !== pwForm.next && (
+              <p className="text-xs text-red-500 mt-1">Les mots de passe ne correspondent pas</p>
+            )}
+          </div>
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={() => setShowPwModal(false)} className="btn-secondary flex-1 justify-center">Annuler</button>
+            <button type="submit"
+              disabled={pwSaving || !pwForm.current || !pwForm.next || pwForm.next !== pwForm.confirm}
+              className="btn-primary flex-1 justify-center disabled:opacity-50">
+              {pwSaving ? '...' : '🔒 Modifier'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

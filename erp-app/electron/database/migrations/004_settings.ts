@@ -25,6 +25,7 @@ export function migration_004_settings(db: Database.Database): void {
       ('invoice_footer',    'Merci pour votre confiance'),
       ('payment_terms',     'Paiement à 30 jours'),
       ('auto_backup',       '1'),
-      ('backup_interval',   '24');
+      ('backup_interval',   '24'),
+      ('invoice_template',  'classic');
   `)
 }

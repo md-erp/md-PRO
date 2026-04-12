@@ -10,12 +10,18 @@ exports.getLicenseInfo = getLicenseInfo;
 const crypto_1 = __importDefault(require("crypto"));
 const node_machine_id_1 = require("node-machine-id");
 const connection_1 = require("../database/connection");
-// SECRET_KEY مدمج — يُشوَّش عند البناء النهائي
-const SECRET_KEY = process.env.LICENSE_SECRET ?? 'ERP_PRO_SECRET_2026_CHANGE_IN_PROD';
+// SECRET_KEY من متغير البيئة — يجب تعيينه في الإنتاج
+const SECRET_KEY = process.env.LICENSE_SECRET;
+if (!SECRET_KEY || SECRET_KEY === 'ERP_PRO_SECRET_2026_CHANGE_IN_PROD') {
+    if (process.env.NODE_ENV === 'production') {
+        console.error('[LICENSE] CRITICAL: LICENSE_SECRET environment variable is not set or uses default value!');
+    }
+}
+const EFFECTIVE_SECRET = SECRET_KEY ?? 'ERP_PRO_SECRET_2026_CHANGE_IN_PROD';
 function generateLicenseKey(companyName, expiryDate) {
     const payload = Buffer.from(`${companyName}|${expiryDate}`).toString('base64');
     const signature = crypto_1.default
-        .createHmac('sha256', SECRET_KEY)
+        .createHmac('sha256', EFFECTIVE_SECRET)
         .update(payload)
         .digest('hex')
         .substring(0, 16)
@@ -30,7 +36,7 @@ function verifyLicenseKey(companyName, licenseKey) {
         const [payload, signature] = parts;
         // التحقق من الـ signature
         const expectedSig = crypto_1.default
-            .createHmac('sha256', SECRET_KEY)
+            .createHmac('sha256', EFFECTIVE_SECRET)
             .update(payload)
             .digest('hex')
             .substring(0, 16)

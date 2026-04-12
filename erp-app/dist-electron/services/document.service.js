@@ -58,6 +58,14 @@ function createDocument(data) {
         return { ...line, total_ht: ht, total_tva: tva, total_ttc: ht + tva };
     });
     const total_ttc = total_ht + total_tva;
+    // التحقق من الأوفر: لا يمكن أن يتجاوز قيمة الفاتورة الأصلية
+    if (data.type === 'avoir' && data.extra?.source_invoice_id) {
+        const db = (0, connection_1.getDb)();
+        const sourceInvoice = db.prepare('SELECT total_ttc FROM documents WHERE id = ? AND is_deleted = 0').get(data.extra.source_invoice_id);
+        if (sourceInvoice && total_ttc > sourceInvoice.total_ttc + 0.01) {
+            throw new Error(`L'avoir (${total_ttc.toFixed(2)} MAD) ne peut pas dépasser la facture source (${sourceInvoice.total_ttc.toFixed(2)} MAD)`);
+        }
+    }
     const tx = db.transaction(() => {
         // إدراج المستند الرئيسي
         const docResult = db.prepare(`

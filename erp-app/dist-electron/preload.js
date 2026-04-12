@@ -10,7 +10,7 @@ const api = {
     getLicenseInfo: () => electron_1.ipcRenderer.invoke('license:info'),
     // --- Auth ---
     login: (data) => electron_1.ipcRenderer.invoke('auth:login', data),
-    logout: () => electron_1.ipcRenderer.invoke('auth:logout'),
+    logout: (data) => electron_1.ipcRenderer.invoke('auth:logout', data),
     getUsers: () => electron_1.ipcRenderer.invoke('users:getAll'),
     createUser: (data) => electron_1.ipcRenderer.invoke('users:create', data),
     updateUser: (data) => electron_1.ipcRenderer.invoke('users:update', data),
@@ -94,6 +94,8 @@ const api = {
     createBackup: () => electron_1.ipcRenderer.invoke('backup:create'),
     restoreBackup: (path) => electron_1.ipcRenderer.invoke('backup:restore', path),
     listBackups: () => electron_1.ipcRenderer.invoke('backup:list'),
+    exportFull: () => electron_1.ipcRenderer.invoke('backup:exportFull'),
+    importFull: () => electron_1.ipcRenderer.invoke('backup:importFull'),
     // --- PDF ---
     pdfGetHtml: (id) => electron_1.ipcRenderer.invoke('pdf:getHtml', id),
     generatePdf: (data) => electron_1.ipcRenderer.invoke('pdf:generate', data),
@@ -127,5 +129,39 @@ const api = {
     createAccount: (d) => electron_1.ipcRenderer.invoke('accounting:createAccount', d),
     getTvaRates: () => electron_1.ipcRenderer.invoke('accounting:getTvaRates'),
     createTvaRate: (d) => electron_1.ipcRenderer.invoke('accounting:createTvaRate', d),
+    // --- Sync & Network ---
+    syncDeviceInfo: () => electron_1.ipcRenderer.invoke('sync:deviceInfo'),
+    syncGetDevices: () => electron_1.ipcRenderer.invoke('sync:getDevices'),
+    syncPull: () => electron_1.ipcRenderer.invoke('sync:pull'),
+    syncPush: () => electron_1.ipcRenderer.invoke('sync:push'),
+    syncInitialSnapshot: () => electron_1.ipcRenderer.invoke('sync:initialSnapshot'),
+    syncTestConnection: (d) => electron_1.ipcRenderer.invoke('sync:testConnection', d),
+    syncStartServer: (p) => electron_1.ipcRenderer.invoke('sync:startServer', p),
+    syncStopServer: () => electron_1.ipcRenderer.invoke('sync:stopServer'),
+    syncGetApiKey: () => electron_1.ipcRenderer.invoke('sync:getApiKey'),
+    // --- Updates ---
+    updateCheck: () => electron_1.ipcRenderer.invoke('update:check'),
+    updateDownload: (v) => electron_1.ipcRenderer.invoke('update:download', v),
+    updateVerify: (d) => electron_1.ipcRenderer.invoke('update:verify', d),
+    updateInstall: (p) => electron_1.ipcRenderer.invoke('update:install', p),
+    updatePublish: (d) => electron_1.ipcRenderer.invoke('update:publish', d),
+    updateList: () => electron_1.ipcRenderer.invoke('update:list'),
+    // --- Push Notifications from Main ─────────────────────────
+    onSyncUpdated: (cb) => {
+        electron_1.ipcRenderer.on('sync:updated', (_e, data) => cb(data));
+        return () => electron_1.ipcRenderer.removeAllListeners('sync:updated');
+    },
+    onSyncOffline: (cb) => {
+        electron_1.ipcRenderer.on('sync:offline', (_e, data) => cb(data));
+        return () => electron_1.ipcRenderer.removeAllListeners('sync:offline');
+    },
+    onUpdateAvailable: (cb) => {
+        electron_1.ipcRenderer.on('update:available', (_e, data) => cb(data));
+        return () => electron_1.ipcRenderer.removeAllListeners('update:available');
+    },
+    onUpdateProgress: (cb) => {
+        electron_1.ipcRenderer.on('update:progress', (_e, data) => cb(data));
+        return () => electron_1.ipcRenderer.removeAllListeners('update:progress');
+    },
 };
 electron_1.contextBridge.exposeInMainWorld('api', api);

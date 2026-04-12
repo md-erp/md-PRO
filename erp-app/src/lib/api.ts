@@ -24,7 +24,7 @@ export const api = {
 
   // Auth
   login:           (d: unknown) => call(() => window.api.login(d),        () => mockApi.login()),
-  logout:          () => call(() => window.api.logout(),                   () => Promise.resolve({ success: true, data: null })),
+  logout:          (d?: unknown) => call(() => window.api.logout(d),        () => Promise.resolve({ success: true, data: null })),
   getUsers:        () => call(() => window.api.getUsers(),           () => mockApi.getUsers()),
   createUser:      (d: unknown) => call(() => window.api.createUser(d),   () => mockApi.createUser()),
   updateUser:      (d: unknown) => call(() => window.api.updateUser(d),   () => mockApi.updateUser()),
@@ -124,6 +124,8 @@ export const api = {
   createBackup:    () => call(() => window.api.createBackup(),         () => mockApi.createBackup()),
   listBackups:     () => call(() => window.api.listBackups(),          () => mockApi.listBackups()),
   restoreBackup:   (p: string) => call(() => window.api.restoreBackup(p), () => mockApi.restoreBackup()),
+  exportFull:      () => call(() => (window.api as any).exportFull(),  () => Promise.resolve({ success: true, data: null })),
+  importFull:      () => call(() => (window.api as any).importFull(),  () => Promise.resolve({ success: true, data: null })),
 
   // Notifications
   getNotifications:    () => call(() => window.api.getNotifications(),       () => mockApi.getNotifications()),
