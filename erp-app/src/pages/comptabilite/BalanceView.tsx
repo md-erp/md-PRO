@@ -35,7 +35,7 @@ export default function BalanceView() {
   }
 
   return (
-    <div className="h-full flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
         <input value={startDate} onChange={e => setStartDate(e.target.value)} className="input w-36" type="date" />
         <input value={endDate} onChange={e => setEndDate(e.target.value)} className="input w-36" type="date" />
@@ -86,7 +86,7 @@ export default function BalanceView() {
         }}>📄 PDF</button>
       </div>
 
-      <div className="card flex-1 overflow-auto">
+      <div className="card overflow-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
             <tr>

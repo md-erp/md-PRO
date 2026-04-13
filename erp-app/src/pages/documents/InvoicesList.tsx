@@ -223,7 +223,7 @@ export default function InvoicesList({ docType, hideNewButton = false }: Props) 
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
 
       {/* ── صف الأزرار الرئيسية — فوق كل شيء ── */}
       <div className="flex items-center justify-between shrink-0">
@@ -349,7 +349,7 @@ export default function InvoicesList({ docType, hideNewButton = false }: Props) 
       </div>
 
       {/* ── table ── */}
-      <div className="card flex-1 overflow-auto" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+      <div className="card overflow-auto" style={{ maxHeight: 'calc(100vh - 320px)' }}>
         <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '65px' }} />

@@ -19,7 +19,7 @@ export default function TvaView() {
   const fmt = (n: number) => new Intl.NumberFormat('fr-MA', { minimumFractionDigits: 2 }).format(n)
 
   return (
-    <div className="h-full flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       {/* Période */}
       <div className="flex items-center gap-3">
         <label className="text-sm text-gray-500">Période:</label>

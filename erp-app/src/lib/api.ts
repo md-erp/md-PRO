@@ -133,6 +133,7 @@ export const api = {
 
   // PDF
   pdfGetHtml:      (id: number)  => call(() => window.api.pdfGetHtml(id),    () => Promise.resolve({ success: true, data: { html: '', number: 'preview' } })),
+  printDocument:   (id: number)  => call(() => window.api.printDocument(id), () => Promise.resolve({ success: true })),
   generatePdf: (d: unknown) => call(() => window.api.generatePdf(d), () => mockApi.generatePdf()),
 
   // Excel

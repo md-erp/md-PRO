@@ -73,7 +73,15 @@ export default function App() {
     )
   }
 
-  if (state === 'activation') return <ErrorBoundary><ActivationPage onActivated={() => setState('setup')} /><ToastContainer /></ErrorBoundary>
+  if (state === 'activation') return <ErrorBoundary><ActivationPage onActivated={async () => {
+    const config = await api.getConfig().catch(() => null) as DeviceConfig | null
+    if (config?.setup_done) {
+      setConfig(config)
+      setState('login')
+    } else {
+      setState('setup')
+    }
+  }} /><ToastContainer /></ErrorBoundary>
   if (state === 'setup')      return <ErrorBoundary><SetupWizard    onComplete={() => setState('login')} /><ToastContainer /></ErrorBoundary>
   if (state === 'login')      return <ErrorBoundary><LoginPage      onLogin={() => setState('app')} /><ToastContainer /></ErrorBoundary>
   return <ErrorBoundary><MainLayout /><ToastContainer /></ErrorBoundary>

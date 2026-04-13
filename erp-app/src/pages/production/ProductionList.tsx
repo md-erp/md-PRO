@@ -58,7 +58,7 @@ export default function ProductionList() {
     : rows.filter(r => r.status === statusFilter)
 
   return (
-    <div className="h-full flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
 
       {/* ── Bouton ── */}
       <div className="flex items-center gap-3 shrink-0">
@@ -112,7 +112,7 @@ export default function ProductionList() {
       </div>
 
       {/* ── Table ── */}
-      <div className="card flex-1 overflow-auto">
+      <div className="card overflow-auto">
         <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '80px' }} />

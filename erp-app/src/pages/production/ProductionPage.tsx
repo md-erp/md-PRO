@@ -28,7 +28,7 @@ export default function ProductionPage() {
           ))}
         </div>
       </div>
-      <div className="flex-1 overflow-hidden p-4">
+      <div className="overflow-y-auto p-4">
         {tab === 'orders'    && <ProductionList />}
         {tab === 'bom'       && <BomList />}
         {tab === 'transform' && <TransformationList />}

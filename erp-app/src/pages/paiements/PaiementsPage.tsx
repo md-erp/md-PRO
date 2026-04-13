@@ -237,7 +237,7 @@ export default function PaiementsPage() {
   const pending  = filtered.filter(p => p.status === 'pending').length
 
   return (
-    <div className="h-full flex flex-col gap-3 p-4">
+    <div className="h-full overflow-y-auto flex flex-col gap-3 p-4">
 
       {/* Header */}
       <div className="flex items-center justify-between shrink-0">
@@ -293,7 +293,7 @@ export default function PaiementsPage() {
       </div>
 
       {/* Table */}
-      <div className="card flex-1 overflow-auto">
+      <div className="card overflow-auto">
         <table className="w-full text-sm table-fixed border-collapse" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '96px' }} />

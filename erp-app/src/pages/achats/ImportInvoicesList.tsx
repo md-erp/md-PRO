@@ -72,7 +72,7 @@ export default function ImportInvoicesList() {
   const totalCost = filtered.filter(d => d.status !== 'cancelled').reduce((s, d) => s + d.total_ttc, 0)
 
   return (
-    <div className="h-full flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between shrink-0">
         <button className="btn-primary px-5 py-2.5 text-sm font-semibold shadow-sm" onClick={() => setModalOpen(true)}>
           + Nouvelle Importation
@@ -121,7 +121,7 @@ export default function ImportInvoicesList() {
 
       </div>
 
-      <div className="card flex-1 overflow-auto">
+      <div className="card overflow-auto">
         <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '80px' }} />

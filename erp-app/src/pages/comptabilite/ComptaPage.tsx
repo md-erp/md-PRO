@@ -30,7 +30,7 @@ export default function ComptaPage() {
           ))}
         </div>
       </div>
-      <div className="flex-1 overflow-hidden p-4">
+      <div className="overflow-y-auto p-4">
         {tab === 'plan'    && <PlanComptable />}
         {tab === 'journal' && <JournalView />}
         {tab === 'grand'   && <GrandLivreView />}

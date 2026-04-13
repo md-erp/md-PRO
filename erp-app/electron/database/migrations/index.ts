@@ -11,20 +11,24 @@ import { migration_008_constraints } from './008_constraints'
 import { migration_009_network_sync } from './009_network_sync'
 import { migration_010_change_tracking } from './010_change_tracking'
 import { migration_011_invoice_template } from './011_invoice_template'
+import { migration_012_company_details } from './012_company_details'
+import { migration_013_custom_templates } from './013_custom_templates'
 
 const MIGRATIONS = [
-  { version: 1,  name: 'initial',             run: migration_001_initial },
-  { version: 2,  name: 'accounting',          run: migration_002_accounting },
-  { version: 3,  name: 'production',          run: migration_003_production },
-  { version: 4,  name: 'settings',            run: migration_004_settings },
-  { version: 5,  name: 'fix_document_status', run: migration_005_fix_document_status },
-  { version: 6,  name: 'user_permissions',    run: migration_006_user_permissions },
-  { version: 7,  name: 'user_sessions',       run: migration_007_user_sessions },
-  { version: 71, name: 'sessions',            run: migration_007_sessions },
-  { version: 8,  name: 'constraints',         run: migration_008_constraints },
-  { version: 9,  name: 'network_sync',        run: migration_009_network_sync },
-  { version: 10, name: 'change_tracking',     run: migration_010_change_tracking },
-  { version: 11, name: 'invoice_template',    run: migration_011_invoice_template },
+  { version: 1, name: 'initial', run: migration_001_initial },
+  { version: 2, name: 'accounting', run: migration_002_accounting },
+  { version: 3, name: 'production', run: migration_003_production },
+  { version: 4, name: 'settings', run: migration_004_settings },
+  { version: 5, name: 'fix_document_status', run: migration_005_fix_document_status },
+  { version: 6, name: 'user_permissions', run: migration_006_user_permissions },
+  { version: 7, name: 'user_sessions', run: migration_007_user_sessions },
+  { version: 71, name: 'sessions', run: migration_007_sessions },
+  { version: 8, name: 'constraints', run: migration_008_constraints },
+  { version: 9, name: 'network_sync', run: migration_009_network_sync },
+  { version: 10, name: 'change_tracking', run: migration_010_change_tracking },
+  { version: 11, name: 'invoice_template', run: migration_011_invoice_template },
+  { version: 12, name: 'company_details', run: migration_012_company_details },
+  { version: 13, name: 'custom_templates', run: migration_013_custom_templates },
 ]
 
 export function runMigrations(db: Database.Database): void {

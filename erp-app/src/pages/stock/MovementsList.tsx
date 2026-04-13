@@ -105,7 +105,7 @@ export default function MovementsList() {
   )
 
   return (
-    <div className="h-full flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
@@ -129,7 +129,7 @@ export default function MovementsList() {
       </div>
 
       {/* Table */}
-      <div className="card flex-1 overflow-auto">
+      <div className="card overflow-auto">
         <table className="w-full text-sm table-fixed border-collapse">
           <colgroup>
             <col style={{ width: '88px' }} />

@@ -185,6 +185,63 @@ export function installUpdate(filePath: string): void {
 }
 
 // ==========================================
+// STANDALONE — تحديث محلي مباشر (بدون شبكة)
+// ==========================================
+
+export function checkLocalUpdate(updateFilePath: string): {
+  success: boolean
+  version?: string
+  fileSize?: number
+  error?: string
+} {
+  try {
+    if (!existsSync(updateFilePath)) {
+      return { success: false, error: 'Fichier de mise à jour introuvable' }
+    }
+
+    const fileSize = statSync(updateFilePath).size
+    const fileName = basename(updateFilePath)
+    
+    // استخراج الإصدار من اسم الملف (مثال: erp-update-1.2.0.exe)
+    const versionMatch = fileName.match(/(\d+\.\d+\.\d+)/)
+    const version = versionMatch ? versionMatch[1] : '0.0.0'
+
+    const currentVersion = app.getVersion?.() ?? '1.0.0'
+    const isNewer = compareVersions(version, currentVersion) > 0
+
+    if (!isNewer) {
+      return { success: false, error: 'La version du fichier n\'est pas plus récente' }
+    }
+
+    return { success: true, version, fileSize }
+  } catch (err: any) {
+    return { success: false, error: err.message }
+  }
+}
+
+export function installLocalUpdate(filePath: string): {
+  success: boolean
+  error?: string
+} {
+  try {
+    if (!existsSync(filePath)) {
+      return { success: false, error: 'Fichier introuvable' }
+    }
+
+    // التحقق من امتداد الملف
+    const ext = filePath.toLowerCase().split('.').pop()
+    if (ext !== 'exe' && ext !== 'msi' && ext !== 'dmg' && ext !== 'appimage') {
+      return { success: false, error: 'Format de fichier non supporté' }
+    }
+
+    installUpdate(filePath)
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err.message }
+  }
+}
+
+// ==========================================
 // HELPERS
 // ==========================================
 

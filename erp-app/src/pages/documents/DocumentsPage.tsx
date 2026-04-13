@@ -29,7 +29,7 @@ export default function DocumentsPage() {
           ))}
         </div>
       </div>
-      <div className="flex-1 overflow-hidden p-4">
+      <div className="overflow-y-auto p-4">
         <InvoicesList docType={activeType} />
       </div>
     </div>

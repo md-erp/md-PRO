@@ -56,7 +56,7 @@ export default function ReceptionsList() {
   })
 
   return (
-    <div className="h-full flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between shrink-0">
         <button className="btn-primary px-5 py-2.5 text-sm font-semibold shadow-sm" onClick={() => setModalOpen(true)}>
           + Nouveau Bon de Réception
@@ -91,7 +91,7 @@ export default function ReceptionsList() {
 
       </div>
 
-      <div className="card flex-1 overflow-auto">
+      <div className="card overflow-auto">
         <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '80px' }} />

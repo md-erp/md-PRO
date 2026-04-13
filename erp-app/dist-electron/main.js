@@ -112,8 +112,8 @@ async function performClientSync() {
         }, 8000);
         if (pullRes.ok) {
             const pullData = await pullRes.json();
-            if (pullData.changes?.length > 0) {
-                const result = (0, sync_service_1.applyChanges)(db, pullData.changes);
+            if ((pullData.changes?.length ?? 0) > 0) {
+                const result = (0, sync_service_1.applyChanges)(db, pullData.changes ?? []);
                 console.log(`[Sync] Pull: ${result.applied} applied, ${result.conflicts} conflicts`);
             }
             (0, sync_service_1.updateSyncState)(db, deviceId, {

@@ -98,6 +98,7 @@ const api = {
     importFull: () => electron_1.ipcRenderer.invoke('backup:importFull'),
     // --- PDF ---
     pdfGetHtml: (id) => electron_1.ipcRenderer.invoke('pdf:getHtml', id),
+    printDocument: (id) => electron_1.ipcRenderer.invoke('pdf:print', id),
     generatePdf: (data) => electron_1.ipcRenderer.invoke('pdf:generate', data),
     // --- Excel ---
     excelExportDocuments: (f) => electron_1.ipcRenderer.invoke('excel:exportDocuments', f),

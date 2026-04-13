@@ -3,22 +3,32 @@ import { handle } from './index'
 import { getDb } from '../database/connection'
 import { logAudit } from '../services/audit.service'
 
-// SHA256 + salt per-user (salt مخزون مع الـ hash بصيغة salt:hash)
+// PBKDF2 + salt per-user (salt مخزون مع الـ hash بصيغة salt:hash)
 function hashPassword(password: string, salt?: string): string {
   const s = salt ?? crypto.randomBytes(16).toString('hex')
-  const hash = crypto.createHash('sha256').update(s + password).digest('hex')
+  // خوارزمية PBKDF2 قوية جداً وتمنع هجمات Brute Force للـ GPU.
+  const hash = crypto.pbkdf2Sync(password, s, 100000, 64, 'sha512').toString('hex')
   return `${s}:${hash}`
 }
 
 function verifyPassword(password: string, stored: string): boolean {
-  // دعم الصيغة القديمة (hash فقط بدون salt) للتوافق مع البيانات الموجودة
+  // دعم الصيغة القديمة (hash فقط بدون salt) للتوافق مع البيانات الموجودة قديماً
   if (!stored.includes(':')) {
     const legacyHash = crypto.createHash('sha256').update(password).digest('hex')
     return legacyHash === stored
   }
   const [salt, hash] = stored.split(':')
-  const computed = crypto.createHash('sha256').update(salt + password).digest('hex')
-  return computed === hash
+
+  // طول الهاش بواسطة sha256 هو 64، بينما طوله بواسطة pbkdf2Sync(64 bytes, hex) هو 128
+  if (hash.length === 64) {
+    // SHA256 + salt القديم
+    const computed = crypto.createHash('sha256').update(salt + password).digest('hex')
+    return computed === hash
+  } else {
+    // PBKDF2 + salt الجديد
+    const computed = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex')
+    return computed === hash
+  }
 }
 
 export function registerAuthHandlers(): void {
@@ -240,16 +250,16 @@ export function registerAuthHandlers(): void {
   })
 }
 
-  handle('auth:logout', (data?: { sessionId?: number; userId?: number }) => {
-    if (data?.sessionId && data?.userId) {
-      const db = getDb()
-      const session = db.prepare('SELECT login_at FROM user_sessions WHERE id = ?').get(data.sessionId) as any
-      if (session) {
-        const duration = Math.floor((Date.now() - new Date(session.login_at).getTime()) / 1000)
-        db.prepare('UPDATE user_sessions SET logout_at = CURRENT_TIMESTAMP, duration_seconds = ? WHERE id = ?')
-          .run(duration, data.sessionId)
-        logAudit(db, { user_id: data.userId, action: 'LOGOUT', table_name: 'users', record_id: data.userId })
-      }
+handle('auth:logout', (data?: { sessionId?: number; userId?: number }) => {
+  if (data?.sessionId && data?.userId) {
+    const db = getDb()
+    const session = db.prepare('SELECT login_at FROM user_sessions WHERE id = ?').get(data.sessionId) as any
+    if (session) {
+      const duration = Math.floor((Date.now() - new Date(session.login_at).getTime()) / 1000)
+      db.prepare('UPDATE user_sessions SET logout_at = CURRENT_TIMESTAMP, duration_seconds = ? WHERE id = ?')
+        .run(duration, data.sessionId)
+      logAudit(db, { user_id: data.userId, action: 'LOGOUT', table_name: 'users', record_id: data.userId })
     }
-    return { success: true }
-  })
+  }
+  return { success: true }
+})

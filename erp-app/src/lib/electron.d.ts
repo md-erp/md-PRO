@@ -107,6 +107,7 @@ declare global {
 
       // PDF & Excel
       pdfGetHtml: (id: number) => Promise<any>
+      printDocument: (id: number) => Promise<any>
       generatePdf: (d: unknown) => Promise<any>
       excelExportDocuments: (f: unknown) => Promise<any>
       excelExportParties: (t: unknown) => Promise<any>

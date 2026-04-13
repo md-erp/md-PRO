@@ -64,6 +64,11 @@ export function verifyLicenseKey(
       return { valid: false, error: "Nom d'entreprise incorrect" }
     }
 
+    // التحقق من تاريخ الانتهاء
+    const expiry = new Date(expiryDate)
+    if (isNaN(expiry.getTime())) return { valid: false, error: 'Date expiration invalide' }
+
+    // التحقق التشفيري ناجح — نعيد التاريخ ونترك getLicenseInfo() يتعامل مع الانتهاء
     return { valid: true, expiryDate }
   } catch {
     return { valid: false, error: 'Clé corrompue' }
@@ -101,15 +106,16 @@ export function getLicenseInfo(): LicenseInfo | null {
 
   const today = new Date()
   const expiry = new Date(license.expiry_date)
-  const daysRemaining = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  const isLifetime = license.expiry_date.startsWith('9999')
+  const daysRemaining = isLifetime ? 999999 : Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
   return {
     companyName: license.company_name,
     expiryDate: license.expiry_date,
     daysRemaining,
-    isValid: daysRemaining > 0,
-    isExpired: daysRemaining <= 0,
-    isExpiringSoon: daysRemaining > 0 && daysRemaining <= 7,
+    isValid: isLifetime || daysRemaining > 0,
+    isExpired: !isLifetime && daysRemaining <= 0,
+    isExpiringSoon: !isLifetime && daysRemaining > 0 && daysRemaining <= 7,
   }
 }
 

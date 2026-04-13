@@ -16,15 +16,15 @@ import type { Document } from '../types'
 import ConfirmDialog from './ui/ConfirmDialog'
 
 const DOC_TYPE_LABEL: Record<string, string> = {
-  invoice:          'Facture',
-  quote:            'Devis',
-  bl:               'Bon de Livraison',
-  proforma:         'Proforma',
-  avoir:            'Avoir',
-  purchase_order:   'Bon de Commande',
-  bl_reception:     'Bon de Réception',
+  invoice: 'Facture',
+  quote: 'Devis',
+  bl: 'Bon de Livraison',
+  proforma: 'Proforma',
+  avoir: 'Avoir',
+  purchase_order: 'Bon de Commande',
+  bl_reception: 'Bon de Réception',
   purchase_invoice: 'Facture Fournisseur',
-  import_invoice:   'Importation',
+  import_invoice: 'Importation',
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -43,8 +43,8 @@ function DueDateBanner({ doc }: { doc: Document }) {
   const inv = doc as any
   if (!inv.due_date || ['paid', 'cancelled'].includes(doc.status)) return null
   const today = new Date(); today.setHours(0, 0, 0, 0)
-  const due   = new Date(inv.due_date); due.setHours(0, 0, 0, 0)
-  const days  = Math.ceil((due.getTime() - today.getTime()) / 86_400_000)
+  const due = new Date(inv.due_date); due.setHours(0, 0, 0, 0)
+  const days = Math.ceil((due.getTime() - today.getTime()) / 86_400_000)
 
   if (days < 0)
     return (
@@ -89,21 +89,21 @@ function EditInvoiceWrapper({ doc, onSaved, onCancel }: {
   useEffect(() => {
     api.getDocument(doc.id).then((fullDoc: any) => {
       setInitialData({
-        docId:          fullDoc.id,
-        date:           fullDoc.date,
-        party_id:       fullDoc.party_id,
-        notes:          fullDoc.notes,
-        due_date:       fullDoc.due_date ?? '',
+        docId: fullDoc.id,
+        date: fullDoc.date,
+        party_id: fullDoc.party_id,
+        notes: fullDoc.notes,
+        due_date: fullDoc.due_date ?? '',
         payment_method: fullDoc.payment_method ?? 'cash',
-        currency:       fullDoc.currency ?? 'MAD',
-        exchange_rate:  fullDoc.exchange_rate ?? 1,
+        currency: fullDoc.currency ?? 'MAD',
+        exchange_rate: fullDoc.exchange_rate ?? 1,
         lines: (fullDoc.lines ?? []).map((l: any) => ({
-          product_id:  l.product_id,
+          product_id: l.product_id,
           description: l.description ?? '',
-          quantity:    l.quantity,
-          unit_price:  l.unit_price,
-          discount:    l.discount ?? 0,
-          tva_rate:    l.tva_rate ?? 20,
+          quantity: l.quantity,
+          unit_price: l.unit_price,
+          discount: l.discount ?? 0,
+          tva_rate: l.tva_rate ?? 20,
         })),
       })
     })
@@ -139,25 +139,25 @@ function EditImportWrapper({ doc, onSaved, onCancel }: {
     api.getDocument(doc.id).then((fullDoc: any) => {
       const extra = fullDoc.extra ?? {}
       setInitialData({
-        docId:           fullDoc.id,
-        date:            fullDoc.date,
-        party_id:        fullDoc.party_id,
-        notes:           fullDoc.notes,
-        currency:        fullDoc.currency        ?? extra.currency        ?? 'EUR',
-        exchange_rate:   Number(fullDoc.exchange_rate  ?? extra.exchange_rate)  || 10.8,
-        invoice_amount:  Number(fullDoc.invoice_amount ?? extra.invoice_amount) || 0,
-        customs:         Number(fullDoc.customs         ?? extra.customs)        || 0,
-        transitaire:     Number(fullDoc.transitaire     ?? extra.transitaire)    || 0,
-        tva_import:      Number(fullDoc.tva_import      ?? extra.tva_import)     || 0,
-        other_costs:     Number(fullDoc.other_costs     ?? extra.other_costs)    || 0,
+        docId: fullDoc.id,
+        date: fullDoc.date,
+        party_id: fullDoc.party_id,
+        notes: fullDoc.notes,
+        currency: fullDoc.currency ?? extra.currency ?? 'EUR',
+        exchange_rate: Number(fullDoc.exchange_rate ?? extra.exchange_rate) || 10.8,
+        invoice_amount: Number(fullDoc.invoice_amount ?? extra.invoice_amount) || 0,
+        customs: Number(fullDoc.customs ?? extra.customs) || 0,
+        transitaire: Number(fullDoc.transitaire ?? extra.transitaire) || 0,
+        tva_import: Number(fullDoc.tva_import ?? extra.tva_import) || 0,
+        other_costs: Number(fullDoc.other_costs ?? extra.other_costs) || 0,
         allocation_mode: extra.allocation_mode ?? 'quantity',
         lines: (fullDoc.lines ?? []).map((l: any) => ({
-          product_id:  l.product_id,
+          product_id: l.product_id,
           description: l.description ?? '',
-          quantity:    Number(l.quantity)   || 1,
-          unit_price:  Number(l.unit_price) || 0, // prix unitaire MAD (coût réparti)
-          discount:    0,
-          tva_rate:    0,
+          quantity: Number(l.quantity) || 1,
+          unit_price: Number(l.unit_price) || 0, // prix unitaire MAD (coût réparti)
+          discount: 0,
+          tva_rate: 0,
         })),
       })
     })
@@ -191,18 +191,18 @@ function EditPurchaseOrderWrapper({ doc, onSaved, onCancel }: {
   useEffect(() => {
     api.getDocument(doc.id).then((fullDoc: any) => {
       setInitialData({
-        docId:    fullDoc.id,
-        date:     fullDoc.date,
+        docId: fullDoc.id,
+        date: fullDoc.date,
         party_id: fullDoc.party_id,
-        notes:    fullDoc.notes,
+        notes: fullDoc.notes,
         expected_delivery_date: (fullDoc as any).expected_delivery_date ?? '',
         lines: (fullDoc.lines ?? []).map((l: any) => ({
-          product_id:  l.product_id,
+          product_id: l.product_id,
           description: l.description ?? '',
-          quantity:    l.quantity,
-          unit_price:  l.unit_price,
-          discount:    l.discount ?? 0,
-          tva_rate:    l.tva_rate ?? 20,
+          quantity: l.quantity,
+          unit_price: l.unit_price,
+          discount: l.discount ?? 0,
+          tva_rate: l.tva_rate ?? 20,
         })),
       })
     })
@@ -236,19 +236,19 @@ function EditPurchaseInvoiceWrapper({ doc, onSaved, onCancel }: {
   useEffect(() => {
     api.getDocument(doc.id).then((fullDoc: any) => {
       setInitialData({
-        docId:          fullDoc.id,
-        date:           fullDoc.date,
-        party_id:       fullDoc.party_id,
-        notes:          fullDoc.notes,
-        due_date:       fullDoc.due_date       ?? '',
+        docId: fullDoc.id,
+        date: fullDoc.date,
+        party_id: fullDoc.party_id,
+        notes: fullDoc.notes,
+        due_date: fullDoc.due_date ?? '',
         payment_method: fullDoc.payment_method ?? 'bank',
         lines: (fullDoc.lines ?? []).map((l: any) => ({
-          product_id:  l.product_id,
+          product_id: l.product_id,
           description: l.description ?? '',
-          quantity:    l.quantity,
-          unit_price:  l.unit_price,
-          discount:    l.discount ?? 0,
-          tva_rate:    l.tva_rate ?? 20,
+          quantity: l.quantity,
+          unit_price: l.unit_price,
+          discount: l.discount ?? 0,
+          tva_rate: l.tva_rate ?? 20,
         })),
       })
     })
@@ -284,11 +284,11 @@ function DocumentTimeline({ docId }: { docId: number }) {
   if (events.length === 0) return null
 
   const typeColor: Record<string, string> = {
-    created:   'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
+    created: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
     confirmed: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',
-    payment:   'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300',
-    delivery:  'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300',
-    avoir:     'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300',
+    payment: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300',
+    delivery: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300',
+    avoir: 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300',
     cancelled: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300',
   }
 
@@ -337,8 +337,8 @@ function POReceiptSummary({ docId }: { docId: number }) {
 
   if (!status || status.summary.length === 0) return null
   const { summary, fullyReceived, brCount } = status
-  const totalOrdered   = summary.reduce((s: number, l: any) => s + l.qty_ordered, 0)
-  const totalReceived  = summary.reduce((s: number, l: any) => s + l.qty_received, 0)
+  const totalOrdered = summary.reduce((s: number, l: any) => s + l.qty_ordered, 0)
+  const totalReceived = summary.reduce((s: number, l: any) => s + l.qty_received, 0)
   const totalRemaining = summary.reduce((s: number, l: any) => s + l.qty_remaining, 0)
   const pct = totalOrdered > 0 ? Math.round((totalReceived / totalOrdered) * 100) : 0
 
@@ -390,7 +390,7 @@ function InvoiceDeliverySummary({ docId }: { docId: number }) {
 
   if (!status || status.summary.length === 0 || status.blCount === 0) return null
   const { summary, fullyDelivered, blCount } = status
-  const totalOrdered   = summary.reduce((s: number, l: any) => s + l.qty_ordered, 0)
+  const totalOrdered = summary.reduce((s: number, l: any) => s + l.qty_ordered, 0)
   const totalDelivered = summary.reduce((s: number, l: any) => s + l.qty_delivered, 0)
   const totalRemaining = summary.reduce((s: number, l: any) => s + l.qty_remaining, 0)
   const pct = totalOrdered > 0 ? Math.round((totalDelivered / totalOrdered) * 100) : 0
@@ -447,7 +447,7 @@ function PartialDeliveryModal({ doc, onSaved, onCancel }: {
       .then((r: any) => {
         setStatus(r)
         const init: Record<number, number> = {}
-        ;(r.summary ?? []).forEach((l: any) => { init[l.id] = l.qty_remaining })
+          ; (r.summary ?? []).forEach((l: any) => { init[l.id] = l.qty_remaining })
         setQuantities(init)
       })
       .catch((e: any) => {
@@ -562,7 +562,7 @@ function PartialReceptionModal({ doc, onSaved, onCancel }: {
       .then((r: any) => {
         setStatus(r)
         const init: Record<number, number> = {}
-        ;(r.summary ?? []).forEach((l: any) => { init[l.id] = l.qty_remaining })
+          ; (r.summary ?? []).forEach((l: any) => { init[l.id] = l.qty_remaining })
         setQuantities(init)
       })
       .catch((e: any) => {
@@ -674,6 +674,7 @@ export default function DocumentDetail({ docId, onUpdated }: Omit<Props, 'onClos
   const [loading, setLoading] = useState(true)
   const [paymentModal, setPaymentModal] = useState(false)
   const [htmlPreview, setHtmlPreview] = useState<string | null>(null)
+  const [printPreview, setPrintPreview] = useState<{ html: string; number: string } | null>(null)
   const [totalPaid, setTotalPaid] = useState(0)
   const [cancelConfirm, setCancelConfirm] = useState(false)
   const [linkedDocId, setLinkedDocId] = useState<number | null>(null)
@@ -772,6 +773,14 @@ export default function DocumentDetail({ docId, onUpdated }: Omit<Props, 'onClos
     }
   }
 
+  async function handleDirectPrint() {
+    try {
+      await api.printDocument(docId)
+    } catch (e: any) {
+      toast(e.message, 'error')
+    }
+  }
+
   async function handlePreview() {
     try {
       const result = await api.pdfGetHtml(docId) as any
@@ -814,11 +823,10 @@ export default function DocumentDetail({ docId, onUpdated }: Omit<Props, 'onClos
           {(doc as any).due_date && (
             <div className="text-xs mt-1 flex items-center gap-1">
               <span className="text-gray-400">Échéance:</span>
-              <span className={`font-medium ${
-                !['paid','cancelled'].includes(doc.status) && new Date((doc as any).due_date) < new Date()
+              <span className={`font-medium ${!['paid', 'cancelled'].includes(doc.status) && new Date((doc as any).due_date) < new Date()
                   ? 'text-red-600'
                   : 'text-gray-600 dark:text-gray-300'
-              }`}>
+                }`}>
                 {new Date((doc as any).due_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
               </span>
             </div>
@@ -1041,7 +1049,7 @@ export default function DocumentDetail({ docId, onUpdated }: Omit<Props, 'onClos
         {/* séparateur */}
         <div className="flex-1" />
         {/* actions secondaires */}
-        {!['cancelled','paid'].includes(doc.status) && (
+        {!['cancelled', 'paid'].includes(doc.status) && (
           <button onClick={() => setCancelConfirm(true)} className="btn-secondary btn-sm text-red-500">🚫 Annuler</button>
         )}
         <button onClick={handlePreview} className="btn-secondary btn-sm">🖨️ PDF</button>
@@ -1154,6 +1162,9 @@ export default function DocumentDetail({ docId, onUpdated }: Omit<Props, 'onClos
               <button onClick={handlePrint} className="btn-primary btn-sm">
                 💾 Enregistrer PDF
               </button>
+              <button onClick={handleDirectPrint} className="btn-secondary btn-sm text-gray-800 bg-white border-white/30">
+                🖨️ Imprimer
+              </button>
               <button onClick={() => setHtmlPreview(null)}
                 className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-sm hover:bg-white/20">
                 Fermer
@@ -1163,6 +1174,81 @@ export default function DocumentDetail({ docId, onUpdated }: Omit<Props, 'onClos
           <div className="flex-1 overflow-auto bg-gray-200 p-4">
             <div className="max-w-3xl mx-auto bg-white shadow-xl rounded"
               dangerouslySetInnerHTML={{ __html: htmlPreview }} />
+          </div>
+        </div>
+      )}
+
+      {/* Print Preview — واجهة طباعة مدمجة */}
+      {printPreview && (
+        <div className="fixed inset-0 z-[80] flex bg-[#404040]">
+          {/* معاينة الصفحة */}
+          <div className="flex-1 overflow-auto p-6 flex flex-col items-center gap-4">
+            <div className="text-gray-300 text-xs mb-2 self-start">
+              {new Date().toLocaleDateString('fr-FR')} — {printPreview.number}
+            </div>
+            <div
+              className="bg-white shadow-2xl"
+              style={{ width: '210mm', minHeight: '297mm', padding: 0 }}
+              dangerouslySetInnerHTML={{ __html: printPreview.html }}
+            />
+          </div>
+
+          {/* لوحة الطباعة على اليمين */}
+          <div className="w-72 bg-[#323232] flex flex-col border-l border-[#555] shrink-0">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#555]">
+              <span className="text-white font-semibold text-base">Imprimer</span>
+              <button onClick={() => setPrintPreview(null)}
+                className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
+            </div>
+
+            <div className="flex-1 px-5 py-4 space-y-5 overflow-auto">
+              {/* عدد الصفحات */}
+              <div className="text-gray-300 text-sm">1 feuille de papier</div>
+
+              {/* Destination */}
+              <div className="space-y-1.5">
+                <label className="text-gray-400 text-xs font-medium uppercase tracking-wide">Destination</label>
+                <div className="bg-[#444] rounded px-3 py-2 text-white text-sm flex items-center gap-2">
+                  🖨️ Imprimante par défaut
+                </div>
+              </div>
+
+              {/* Pages */}
+              <div className="space-y-1.5">
+                <label className="text-gray-400 text-xs font-medium uppercase tracking-wide">Pages</label>
+                <div className="bg-[#444] rounded px-3 py-2 text-white text-sm">Toutes</div>
+              </div>
+
+              {/* Couleur */}
+              <div className="space-y-1.5">
+                <label className="text-gray-400 text-xs font-medium uppercase tracking-wide">Couleur</label>
+                <div className="bg-[#444] rounded px-3 py-2 text-white text-sm">Couleur</div>
+              </div>
+
+              {/* Format */}
+              <div className="space-y-1.5">
+                <label className="text-gray-400 text-xs font-medium uppercase tracking-wide">Format</label>
+                <div className="bg-[#444] rounded px-3 py-2 text-white text-sm">A4</div>
+              </div>
+            </div>
+
+            {/* أزرار الطباعة */}
+            <div className="px-5 py-4 border-t border-[#555] flex gap-3">
+              <button
+                onClick={async () => {
+                  setPrintPreview(null)
+                  await api.printDocument(docId)
+                }}
+                className="flex-1 bg-[#1a73e8] hover:bg-[#1557b0] text-white font-medium py-2 rounded text-sm transition-colors">
+                Imprimer
+              </button>
+              <button
+                onClick={() => setPrintPreview(null)}
+                className="flex-1 bg-transparent hover:bg-[#444] text-gray-300 font-medium py-2 rounded text-sm border border-[#666] transition-colors">
+                Annuler
+              </button>
+            </div>
           </div>
         </div>
       )}

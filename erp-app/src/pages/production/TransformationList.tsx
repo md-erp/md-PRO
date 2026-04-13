@@ -37,7 +37,7 @@ export default function TransformationList() {
   const totalOutputs = rows.reduce((s, r) => s + (r.outputs?.length ?? 0), 0)
 
   return (
-    <div className="h-full flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
 
       {/* ── Toolbar ── */}
       <div className="flex items-center gap-3 shrink-0">
@@ -67,7 +67,7 @@ export default function TransformationList() {
         </div>
 
       {/* ── Table ── */}
-      <div className="card flex-1 overflow-auto">
+      <div className="card overflow-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0 z-10">
             <tr>

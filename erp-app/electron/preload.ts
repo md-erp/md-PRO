@@ -112,6 +112,7 @@ const api = {
 
   // --- PDF ---
   pdfGetHtml:         (id: number)  => ipcRenderer.invoke('pdf:getHtml', id),
+  printDocument:      (id: number)  => ipcRenderer.invoke('pdf:print', id),
   generatePdf:        (data: unknown) => ipcRenderer.invoke('pdf:generate', data),
 
   // --- Excel ---

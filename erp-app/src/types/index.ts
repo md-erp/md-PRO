@@ -250,6 +250,17 @@ export interface DeviceConfig {
   company_rc: string
   company_address: string
   company_phone: string
+  company_fax: string
+  company_email: string
+  company_website: string
+  company_cnss: string
+  company_bank_name: string
+  company_bank_rib: string
+  company_bank_account: string
+  company_capital: string
+  company_legal_form: string
+  company_city: string
+  company_country: string
   company_logo: string
   mode: 'standalone' | 'master' | 'client'
   server_ip: string

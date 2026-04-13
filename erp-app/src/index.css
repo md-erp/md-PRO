@@ -5,6 +5,8 @@
 @layer base {
   * { box-sizing: border-box; }
 
+  html, body, #root { height: 100%; }
+
   :root {
     --surface-1: #f8fafc;
     --surface-2: #ffffff;

@@ -88,7 +88,7 @@ export default function PartiesList({ type }: Props) {
   ]
 
   return (
-    <div className="h-full flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between shrink-0">
         <button className="btn-primary px-5 py-2.5 text-sm font-semibold shadow-sm"
           onClick={() => { setEditing(null); setModalOpen(true) }}>
@@ -119,7 +119,7 @@ export default function PartiesList({ type }: Props) {
           placeholder={'Rechercher par nom, ICE, telephone...'} />
       </div>
 
-      <div className="card flex-1 overflow-auto">
+      <div className="card overflow-auto">
         <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '180px' }} />

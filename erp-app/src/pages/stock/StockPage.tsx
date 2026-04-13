@@ -26,7 +26,7 @@ export default function StockPage() {
           ))}
         </div>
       </div>
-      <div className="flex-1 overflow-hidden p-4">
+      <div className="overflow-y-auto p-4">
         {tab === 'all'       && <ProductsList />}
         {tab === 'movements' && <MovementsList />}
         {tab === 'transform' && <TransformationList />}

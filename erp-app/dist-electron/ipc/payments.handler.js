@@ -55,6 +55,11 @@ function registerPaymentHandlers() {
             const isPending = (data.status ?? 'pending') === 'pending';
             // الشيك/LCN بحالة pending لا يُحسب على الفاتورة حتى يُصرف
             if (data.document_id && !(isCheque && isPending)) {
+                const doc = db.prepare('SELECT total_ttc FROM documents WHERE id = ?').get(data.document_id);
+                const paidRow = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM payment_allocations WHERE document_id = ?').get(data.document_id);
+                if (doc && (paidRow.total + data.amount) > doc.total_ttc + 0.01) {
+                    throw new Error(`Le montant (${data.amount.toFixed(2)}) dépasse le reste à payer de la facture (${(doc.total_ttc - paidRow.total).toFixed(2)})`);
+                }
                 db.prepare('INSERT INTO payment_allocations (payment_id, document_id, amount) VALUES (?, ?, ?)').run(paymentId, data.document_id, data.amount);
                 updateInvoicePaymentStatus(db, data.document_id);
             }
@@ -92,6 +97,11 @@ function registerPaymentHandlers() {
             // عند تحويل شيك من pending إلى cleared → تطبيق على الفاتورة + قيد محاسبي
             if (isCheque && payment.status === 'pending' && data.status === 'cleared') {
                 if (payment.document_id) {
+                    const doc = db.prepare('SELECT total_ttc FROM documents WHERE id = ?').get(payment.document_id);
+                    const paidRow = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM payment_allocations WHERE document_id = ?').get(payment.document_id);
+                    if (doc && (paidRow.total + payment.amount) > doc.total_ttc + 0.01) {
+                        throw new Error(`Le montant du chèque dépasse le reste à payer de la facture`);
+                    }
                     const existing = db.prepare('SELECT id FROM payment_allocations WHERE payment_id = ?').get(data.id);
                     if (!existing) {
                         db.prepare('INSERT INTO payment_allocations (payment_id, document_id, amount) VALUES (?, ?, ?)').run(data.id, payment.document_id, payment.amount);

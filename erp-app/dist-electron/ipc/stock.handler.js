@@ -47,11 +47,13 @@ function registerStockHandlers() {
     (0, index_1.handle)('stock:deleteMovement', (id) => {
         const db = (0, connection_1.getDb)();
         // فقط الحركات غير المطبقة يمكن حذفها
-        const mov = db.prepare('SELECT applied FROM stock_movements WHERE id = ?').get(id);
+        const mov = db.prepare('SELECT applied, document_id FROM stock_movements WHERE id = ?').get(id);
         if (!mov)
             throw new Error('Mouvement introuvable');
         if (mov.applied === 1)
             throw new Error('Impossible de supprimer un mouvement déjà appliqué');
+        if (mov.document_id)
+            throw new Error('Impossible de supprimer un mouvement lié à un document. Annulez d\'abord le document lié.');
         db.prepare('DELETE FROM stock_movements WHERE id = ?').run(id);
         return { success: true };
     });

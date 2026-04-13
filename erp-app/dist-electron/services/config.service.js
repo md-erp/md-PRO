@@ -21,7 +21,10 @@ function sanitize(v) {
 }
 const ALLOWED_CONFIG_FIELDS = new Set([
     'company_name', 'company_ice', 'company_if', 'company_rc',
-    'company_address', 'company_phone', 'company_logo',
+    'company_address', 'company_phone', 'company_fax', 'company_email',
+    'company_website', 'company_cnss', 'company_bank_name', 'company_bank_rib',
+    'company_bank_account', 'company_capital', 'company_legal_form',
+    'company_city', 'company_country', 'company_logo',
     'mode', 'server_ip', 'server_port', 'currency', 'setup_done',
 ]);
 function saveDeviceConfig(data) {
@@ -38,9 +41,11 @@ function saveDeviceConfig(data) {
     else {
         db.prepare(`
       INSERT INTO device_config (id, company_name, company_ice, company_if, company_rc,
-        company_address, company_phone, company_logo, mode, server_ip, server_port,
-        currency, setup_done)
-      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(data.company_name ?? '', data.company_ice ?? '', data.company_if ?? '', data.company_rc ?? '', data.company_address ?? '', data.company_phone ?? '', data.company_logo ?? '', data.mode ?? 'standalone', data.server_ip ?? '', data.server_port ?? 3000, data.currency ?? 'MAD', data.setup_done ? 1 : 0);
+        company_address, company_phone, company_fax, company_email, company_website,
+        company_cnss, company_bank_name, company_bank_rib, company_bank_account,
+        company_capital, company_legal_form, company_city, company_country,
+        company_logo, mode, server_ip, server_port, currency, setup_done)
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(data.company_name ?? '', data.company_ice ?? '', data.company_if ?? '', data.company_rc ?? '', data.company_address ?? '', data.company_phone ?? '', data.company_fax ?? '', data.company_email ?? '', data.company_website ?? '', data.company_cnss ?? '', data.company_bank_name ?? '', data.company_bank_rib ?? '', data.company_bank_account ?? '', data.company_capital ?? '', data.company_legal_form ?? '', data.company_city ?? '', data.company_country ?? 'Maroc', data.company_logo ?? '', data.mode ?? 'standalone', data.server_ip ?? '', data.server_port ?? 3000, data.currency ?? 'MAD', data.setup_done ? 1 : 0);
     }
 }

@@ -28,7 +28,7 @@ export default function GrandLivreView() {
   const totalCredit = lines.reduce((s, l) => s + l.credit, 0)
 
   return (
-    <div className="h-full flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3 flex-wrap">
         <select value={selectedAccount} onChange={e => setSelectedAccount(Number(e.target.value))} className="input w-64">
           <option value={0}>— Choisir un compte —</option>
@@ -86,7 +86,7 @@ export default function GrandLivreView() {
         </div>
       )}
       {lines.length > 0 && (
-        <div className="card flex-1 overflow-auto">
+        <div className="card overflow-auto">
           <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
             <colgroup>
               <col style={{ width: '110px' }} />

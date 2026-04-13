@@ -125,9 +125,9 @@ async function performClientSync(): Promise<void> {
     }, 8000)
 
     if (pullRes.ok) {
-      const pullData = await pullRes.json()
-      if (pullData.changes?.length > 0) {
-        const result = applyChanges(db, pullData.changes)
+      const pullData = await pullRes.json() as { changes?: any[]; latest_id?: number }
+      if ((pullData.changes?.length ?? 0) > 0) {
+        const result = applyChanges(db, pullData.changes ?? [])
         console.log(`[Sync] Pull: ${result.applied} applied, ${result.conflicts} conflicts`)
       }
       updateSyncState(db, deviceId, {

@@ -18,14 +18,14 @@ export function registerPaymentHandlers(): void {
     `
     const params: any[] = []
 
-    if (filters?.party_id)   { query += ' AND p.party_id = ?';   params.push(filters.party_id) }
+    if (filters?.party_id) { query += ' AND p.party_id = ?'; params.push(filters.party_id) }
     if (filters?.party_type) { query += ' AND p.party_type = ?'; params.push(filters.party_type) }
-    if (filters?.status)     { query += ' AND p.status = ?';     params.push(filters.status) }
-    if (filters?.document_id){ query += ' AND p.document_id = ?'; params.push(filters.document_id) }
+    if (filters?.status) { query += ' AND p.status = ?'; params.push(filters.status) }
+    if (filters?.document_id) { query += ' AND p.document_id = ?'; params.push(filters.document_id) }
 
     query += ' ORDER BY p.created_at DESC, p.id DESC'
 
-    const limit  = filters?.limit  ?? 200
+    const limit = filters?.limit ?? 200
     const offset = filters?.offset ?? 0
     query += ' LIMIT ? OFFSET ?'
     params.push(limit, offset)
@@ -54,6 +54,11 @@ export function registerPaymentHandlers(): void {
 
       // الشيك/LCN بحالة pending لا يُحسب على الفاتورة حتى يُصرف
       if (data.document_id && !(isCheque && isPending)) {
+        const doc = db.prepare('SELECT total_ttc FROM documents WHERE id = ?').get(data.document_id) as any
+        const paidRow = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM payment_allocations WHERE document_id = ?').get(data.document_id) as any
+        if (doc && (paidRow.total + data.amount) > doc.total_ttc + 0.01) {
+          throw new Error(`Le montant (${data.amount.toFixed(2)}) dépasse le reste à payer de la facture (${(doc.total_ttc - paidRow.total).toFixed(2)})`)
+        }
         db.prepare('INSERT INTO payment_allocations (payment_id, document_id, amount) VALUES (?, ?, ?)').run(
           paymentId, data.document_id, data.amount
         )
@@ -101,6 +106,11 @@ export function registerPaymentHandlers(): void {
       // عند تحويل شيك من pending إلى cleared → تطبيق على الفاتورة + قيد محاسبي
       if (isCheque && payment.status === 'pending' && data.status === 'cleared') {
         if (payment.document_id) {
+          const doc = db.prepare('SELECT total_ttc FROM documents WHERE id = ?').get(payment.document_id) as any
+          const paidRow = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM payment_allocations WHERE document_id = ?').get(payment.document_id) as any
+          if (doc && (paidRow.total + payment.amount) > doc.total_ttc + 0.01) {
+            throw new Error(`Le montant du chèque dépasse le reste à payer de la facture`)
+          }
           const existing = db.prepare('SELECT id FROM payment_allocations WHERE payment_id = ?').get(data.id)
           if (!existing) {
             db.prepare('INSERT INTO payment_allocations (payment_id, document_id, amount) VALUES (?, ?, ?)').run(

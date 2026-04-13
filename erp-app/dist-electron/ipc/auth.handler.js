@@ -8,21 +8,31 @@ const crypto_1 = __importDefault(require("crypto"));
 const index_1 = require("./index");
 const connection_1 = require("../database/connection");
 const audit_service_1 = require("../services/audit.service");
-// SHA256 + salt per-user (salt مخزون مع الـ hash بصيغة salt:hash)
+// PBKDF2 + salt per-user (salt مخزون مع الـ hash بصيغة salt:hash)
 function hashPassword(password, salt) {
     const s = salt ?? crypto_1.default.randomBytes(16).toString('hex');
-    const hash = crypto_1.default.createHash('sha256').update(s + password).digest('hex');
+    // خوارزمية PBKDF2 قوية جداً وتمنع هجمات Brute Force للـ GPU.
+    const hash = crypto_1.default.pbkdf2Sync(password, s, 100000, 64, 'sha512').toString('hex');
     return `${s}:${hash}`;
 }
 function verifyPassword(password, stored) {
-    // دعم الصيغة القديمة (hash فقط بدون salt) للتوافق مع البيانات الموجودة
+    // دعم الصيغة القديمة (hash فقط بدون salt) للتوافق مع البيانات الموجودة قديماً
     if (!stored.includes(':')) {
         const legacyHash = crypto_1.default.createHash('sha256').update(password).digest('hex');
         return legacyHash === stored;
     }
     const [salt, hash] = stored.split(':');
-    const computed = crypto_1.default.createHash('sha256').update(salt + password).digest('hex');
-    return computed === hash;
+    // طول الهاش بواسطة sha256 هو 64، بينما طوله بواسطة pbkdf2Sync(64 bytes, hex) هو 128
+    if (hash.length === 64) {
+        // SHA256 + salt القديم
+        const computed = crypto_1.default.createHash('sha256').update(salt + password).digest('hex');
+        return computed === hash;
+    }
+    else {
+        // PBKDF2 + salt الجديد
+        const computed = crypto_1.default.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
+        return computed === hash;
+    }
 }
 function registerAuthHandlers() {
     (0, index_1.handle)('auth:login', ({ email, password }) => {

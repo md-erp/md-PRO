@@ -82,7 +82,7 @@ export default function PlanComptable() {
   }, {} as Record<number, Account[]>)
 
   return (
-    <div className="h-full flex flex-col gap-3">
+    <div className="h-full overflow-y-auto flex flex-col gap-3">
       <div className="flex items-center gap-3">
         <input value={search} onChange={e => setSearch(e.target.value)}
           className="input max-w-xs" placeholder="Rechercher par code ou nom..." />

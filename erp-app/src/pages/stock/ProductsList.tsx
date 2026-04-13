@@ -88,7 +88,7 @@ export default function ProductsList() {
   const lowCount      = rows.filter(p => p.stock_quantity > 0 && p.min_stock > 0 && p.stock_quantity <= p.min_stock).length
 
   return (
-    <div className="h-full flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
 
       {/* Header: boutons + KPI */}
       <div className="flex items-center justify-between shrink-0">
@@ -134,7 +134,7 @@ export default function ProductsList() {
       </div>
 
       {/* Table */}
-      <div className="card flex-1 overflow-auto">
+      <div className="card overflow-auto">
         <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '80px' }} />

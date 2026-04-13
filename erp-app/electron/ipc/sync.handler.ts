@@ -81,7 +81,7 @@ export function registerSyncHandlers(): void {
 
       if (!res.ok) throw new Error(`Serveur: HTTP ${res.status}`)
 
-      const data = await res.json()
+      const data = await res.json() as { changes?: any[]; latest_id?: number }
       const result = applyChanges(db, data.changes ?? [])
 
       updateSyncState(db, deviceId, {
@@ -131,7 +131,7 @@ export function registerSyncHandlers(): void {
 
       if (!res.ok) throw new Error(`Serveur: HTTP ${res.status}`)
 
-      const result = await res.json()
+      const result = await res.json() as { applied: number; conflicts: number }
 
       // تحديد التغييرات كـ synced
       markQueueItemDone(db, 0) // placeholder
@@ -171,7 +171,7 @@ export function registerSyncHandlers(): void {
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
-      const { snapshot, latest_change_id } = await res.json()
+      const { snapshot, latest_change_id } = await res.json() as { snapshot: Record<string, any[]>; latest_change_id: number }
       const result = applyChanges(db, Object.entries(snapshot).flatMap(([table, rows]) =>
         (rows as any[]).map(row => ({
           id: 0, device_id: 'master', table_name: table,
@@ -285,7 +285,7 @@ export function registerSyncHandlers(): void {
     try {
       const res = await fetchWithTimeout(`http://${ip}:${port}/health`, {}, 5000)
       if (!res.ok) return { ok: false, message: `HTTP ${res.status}` }
-      const info = await res.json()
+      const info = await res.json() as Record<string, unknown>
       return { ok: true, ...info }
     } catch (err: any) {
       return { ok: false, message: err.message }

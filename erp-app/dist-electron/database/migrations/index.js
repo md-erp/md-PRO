@@ -13,6 +13,8 @@ const _008_constraints_1 = require("./008_constraints");
 const _009_network_sync_1 = require("./009_network_sync");
 const _010_change_tracking_1 = require("./010_change_tracking");
 const _011_invoice_template_1 = require("./011_invoice_template");
+const _012_company_details_1 = require("./012_company_details");
+const _013_custom_templates_1 = require("./013_custom_templates");
 const MIGRATIONS = [
     { version: 1, name: 'initial', run: _001_initial_1.migration_001_initial },
     { version: 2, name: 'accounting', run: _002_accounting_1.migration_002_accounting },
@@ -26,6 +28,8 @@ const MIGRATIONS = [
     { version: 9, name: 'network_sync', run: _009_network_sync_1.migration_009_network_sync },
     { version: 10, name: 'change_tracking', run: _010_change_tracking_1.migration_010_change_tracking },
     { version: 11, name: 'invoice_template', run: _011_invoice_template_1.migration_011_invoice_template },
+    { version: 12, name: 'company_details', run: _012_company_details_1.migration_012_company_details },
+    { version: 13, name: 'custom_templates', run: _013_custom_templates_1.migration_013_custom_templates },
 ];
 function runMigrations(db) {
     // جدول تتبع الإصدارات
