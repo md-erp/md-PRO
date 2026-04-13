@@ -65,22 +65,16 @@
     "win": {
       "target": [
         { "target": "nsis", "arch": ["x64"] }
-      ],
-      "icon": "build/icon.ico"
+      ]
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico"
+      "allowToChangeInstallationDirectory": true
     },
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
       "node_modules/**/*"
-    ],
-    "extraMetadata": {
-      "main": "dist-electron/main.js"
-    }
+    ]
   }
 }
