@@ -42,7 +42,7 @@ export function registerSupplierHandlers(): void {
           AND status != 'bounced'
       `).get(supplier.id) as any)
       const balance = (invRow.t ?? 0) - (payRow.t ?? 0)
-      return { ...supplier, balance }
+      return { ...(supplier as object), balance }
     })
 
     return { rows: rowsWithBalance, total, page, limit }
@@ -68,7 +68,7 @@ export function registerSupplierHandlers(): void {
     `).get(id) as any)
     const balance = (invRow2.t ?? 0) - (payRow2.t ?? 0)
 
-    return { ...supplier, balance }
+    return { ...(supplier as object), balance }
   })
 
   handle('suppliers:create', (data) => {

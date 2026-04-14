@@ -41,7 +41,7 @@ export function registerClientHandlers(): void {
           AND status != 'bounced'
       `).get(client.id) as any)
       const balance = (invRow.t ?? 0) - (payRow.t ?? 0)
-      return { ...client, balance }
+      return { ...(client as object), balance }
     })
 
     return { rows: rowsWithBalance, total, page, limit }
@@ -66,7 +66,7 @@ export function registerClientHandlers(): void {
     `).get(id) as any)
     const balance = (invRow2.t ?? 0) - (payRow2.t ?? 0)
 
-    return { ...client, balance }
+    return { ...(client as object), balance }
   })
 
   handle('clients:create', (data) => {

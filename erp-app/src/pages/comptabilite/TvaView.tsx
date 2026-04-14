@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '../../lib/api'
+import { toast } from '../../components/ui/Toast'
 
 export default function TvaView() {
   const [data, setData] = useState<any>(null)
@@ -29,7 +30,58 @@ export default function TvaView() {
         <button onClick={load} disabled={!startDate || !endDate} className="btn-primary">
           Calculer
         </button>
-        {data && <button className="btn-secondary btn-sm ml-auto">📄 Exporter</button>}
+        {data && (
+          <div className="flex gap-2 ml-auto">
+            <button onClick={async () => {
+              try {
+                const rows = [
+                  { label: 'TVA Collectée', amount: data.totalCollectee ?? 0 },
+                  { label: 'TVA Récupérable', amount: data.totalRecuperable ?? 0 },
+                  { label: 'TVA Due', amount: data.tvaDue ?? 0 },
+                ]
+                await api.excelExportReport({ type: 'tva', rows, filters: { startDate, endDate } })
+                toast('Fichier Excel enregistré ✓')
+              } catch (e: any) { toast(e.message, 'error') }
+            }} className="btn-secondary btn-sm">📊 Excel</button>
+            <button onClick={() => {
+              const printContent = `
+                <html><head><title>Déclaration TVA</title>
+                <style>
+                  body { font-family: Arial, sans-serif; padding: 30px; color: #111; }
+                  h2 { margin-bottom: 4px; }
+                  .period { color: #666; font-size: 13px; margin-bottom: 24px; }
+                  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                  th { background: #f3f4f6; padding: 8px 12px; text-align: left; font-size: 13px; }
+                  td { padding: 8px 12px; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
+                  .total-row td { font-weight: bold; border-top: 2px solid #d1d5db; }
+                  .result { text-align: center; padding: 20px; border: 2px solid #fca5a5; border-radius: 8px; background: #fef2f2; }
+                  .result .amount { font-size: 28px; font-weight: bold; color: #dc2626; }
+                  @page { size: A4; margin: 15mm; }
+                </style></head><body>
+                <h2>Déclaration TVA</h2>
+                <div class="period">Période: ${startDate} → ${endDate}</div>
+                <table>
+                  <tr><th>TVA Facturée (Collectée)</th><th style="text-align:right">Montant</th></tr>
+                  ${(data.collectee ?? []).map((r: any) => `<tr><td>${r.tva_rate}</td><td style="text-align:right">${fmt(r.amount)} MAD</td></tr>`).join('')}
+                  <tr class="total-row"><td>Total</td><td style="text-align:right;color:#dc2626">${fmt(data.totalCollectee ?? 0)} MAD</td></tr>
+                </table>
+                <table>
+                  <tr><th>TVA Récupérable (Déductible)</th><th style="text-align:right">Montant</th></tr>
+                  ${(data.recuperable ?? []).map((r: any) => `<tr><td>${r.tva_rate}</td><td style="text-align:right">${fmt(r.amount)} MAD</td></tr>`).join('')}
+                  <tr class="total-row"><td>Total</td><td style="text-align:right;color:#16a34a">${fmt(data.totalRecuperable ?? 0)} MAD</td></tr>
+                </table>
+                <div class="result">
+                  <div style="font-size:13px;color:#666;margin-bottom:6px">${(data.tvaDue ?? 0) >= 0 ? 'TVA due à payer' : 'Crédit de TVA'}</div>
+                  <div class="amount">${fmt(Math.abs(data.tvaDue ?? 0))} MAD</div>
+                  <div style="font-size:12px;color:#999;margin-top:6px">${fmt(data.totalCollectee ?? 0)} − ${fmt(data.totalRecuperable ?? 0)} = ${fmt(data.tvaDue ?? 0)} MAD</div>
+                </div>
+                </body></html>
+              `
+              const w = window.open('', '_blank')
+              if (w) { w.document.write(printContent); w.document.close(); w.print() }
+            }} className="btn-secondary btn-sm">📄 PDF</button>
+          </div>
+        )}
       </div>
 
       {loading && <div className="text-center py-12 text-gray-400">Calcul en cours...</div>}
