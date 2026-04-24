@@ -79,7 +79,7 @@ export default function TransformationForm({ onSaved, onCancel }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={e => { e.stopPropagation(); handleSubmit(e) }} className="space-y-4">
 
       {/* ── Matière entrante ── */}
       <div className="grid grid-cols-3 gap-3">

@@ -124,8 +124,8 @@ export const api = {
   createBackup:    () => call(() => window.api.createBackup(),         () => mockApi.createBackup()),
   listBackups:     () => call(() => window.api.listBackups(),          () => mockApi.listBackups()),
   restoreBackup:   (p: string) => call(() => window.api.restoreBackup(p), () => mockApi.restoreBackup()),
-  exportFull:      () => call(() => (window.api as any).exportFull(),  () => Promise.resolve({ success: true, data: null })),
-  importFull:      () => call(() => (window.api as any).importFull(),  () => Promise.resolve({ success: true, data: null })),
+  exportFull:      () => call(() => window.api.exportFull(),  () => Promise.resolve({ success: true, data: null })),
+  importFull:      () => call(() => window.api.importFull(),  () => Promise.resolve({ success: true, data: null })),
 
   // Notifications
   getNotifications:    () => call(() => window.api.getNotifications(),       () => mockApi.getNotifications()),
@@ -200,4 +200,10 @@ export const api = {
   updateInstall:  (p: string) => call(() => (window.api as any).updateInstall(p),  () => Promise.resolve({ success: true, data: null })),
   updatePublish:  (d: unknown) => call(() => (window.api as any).updatePublish(d), () => Promise.resolve({ success: true, data: null })),
   updateList:     () => call(() => (window.api as any).updateList(),               () => Promise.resolve({ success: true, data: [] })),
+
+  // Document Sequences
+  sequencesGetAll:  () => call(() => (window.api as any).sequencesGetAll(),    () => Promise.resolve({ success: true, data: [] })),
+  sequencesSet:     (d: unknown) => call(() => (window.api as any).sequencesSet(d), () => Promise.resolve({ success: true, data: null })),
+  sequencesGetNext: (d: unknown) => call(() => (window.api as any).sequencesGetNext(d), () => Promise.resolve({ success: true, data: { next: 1, year: new Date().getFullYear() % 100 } })),
+  sequencesCheck:   (d: unknown) => call(() => (window.api as any).sequencesCheck(d), () => Promise.resolve({ success: true, data: { available: true } })),
 }

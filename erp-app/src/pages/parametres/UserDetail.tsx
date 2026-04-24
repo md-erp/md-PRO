@@ -152,7 +152,7 @@ export default function UserDetail({ userId, onClose: _onClose }: Props) {
         {isSelf && (
           <div>
             <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">🔒 Changer le mot de passe</div>
-            <form onSubmit={handleChangePassword} className="space-y-3">
+            <form onSubmit={e => { e.stopPropagation(); handleChangePassword(e) }} className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Mot de passe actuel</label>
                 <input type="password" value={pwForm.current}

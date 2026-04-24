@@ -8,6 +8,7 @@ import FormField from '../../components/ui/FormField'
 import { PartySelector } from '../../components/ui/PartySelector'
 import { LinesTable, getDefaultTva, LinesTotals } from '../../components/ui/LinesTable'
 import type { Product, Document } from '../../types'
+import DocumentNumberField from '../../components/ui/DocumentNumberField'
 
 const AVOIR_TYPES = [
   { value: 'retour',     label: 'Retour marchandise', icon: '📦', desc: 'Retour physique — remet en stock' },
@@ -42,6 +43,7 @@ interface Props {
 export default function AvoirForm({ onSaved, onCancel, sourceInvoice }: Props) {
   const [products, setProducts] = useState<Product[]>([])
   const [invoices, setInvoices] = useState<Document[]>([])
+  const [customSeq, setCustomSeq] = useState<number | undefined>(undefined)
 
   const fmt = (n: number) => new Intl.NumberFormat('fr-MA', { minimumFractionDigits: 2 }).format(n)
 
@@ -107,7 +109,8 @@ export default function AvoirForm({ onSaved, onCancel, sourceInvoice }: Props) {
         lines: data.lines, notes: data.reason,
         extra: { avoir_type: data.avoir_type, affects_stock, reason: data.reason },
         created_by: 1,
-      }) as any
+          ...(customSeq !== undefined ? { custom_seq: customSeq } : {}),
+        }) as any
 
       if (data.source_invoice_id) {
         await api.linkDocuments({
@@ -165,7 +168,6 @@ export default function AvoirForm({ onSaved, onCancel, sourceInvoice }: Props) {
             value={watch('party_id')}
             onChange={(id) => setValue('party_id', id)}
             onClear={() => { setValue('party_id', 0); setInvoices([]) }}
-            error={errors.party_id?.message}
           />
         </FormField>
       )}
@@ -174,6 +176,13 @@ export default function AvoirForm({ onSaved, onCancel, sourceInvoice }: Props) {
         <FormField label="Date" required>
           <input {...register('date')} className="input" type="date" />
         </FormField>
+
+      <FormField label="Numéro du document">
+        <DocumentNumberField
+          docType="avoir"
+          onSeqChange={setCustomSeq}
+        />
+      </FormField>
         {!sourceInvoice && invoices.length > 0 && (
           <FormField label="Facture liée">
             <select {...register('source_invoice_id')} className="input">
@@ -213,6 +222,8 @@ export default function AvoirForm({ onSaved, onCancel, sourceInvoice }: Props) {
         onAdd={() => append({ quantity: 1, unit_price: 0, discount: 0, tva_rate: getDefaultTva() })}
         showDiscount
         showTva
+      
+        onProductsRefresh={setProducts}
       />
 
       <LinesTotals lines={lines} />

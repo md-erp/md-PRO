@@ -31,6 +31,7 @@ const STOCK_FILTER = [
 ]
 
 export default function ProductsList() {
+
   const [rows, setRows]           = useState<Product[]>([])
   const [search, setSearch]       = useState('')
   const [typeFilter, setTypeFilter] = useState('')
@@ -88,7 +89,7 @@ export default function ProductsList() {
   const lowCount      = rows.filter(p => p.stock_quantity > 0 && p.min_stock > 0 && p.stock_quantity <= p.min_stock).length
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="h-full flex flex-col gap-3 overflow-hidden">
 
       {/* Header: boutons + KPI */}
       <div className="flex items-center justify-between shrink-0">
@@ -134,7 +135,7 @@ export default function ProductsList() {
       </div>
 
       {/* Table */}
-      <div className="card overflow-auto">
+      <div className="card overflow-y-auto flex-1 min-h-0">
         <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '80px' }} />
@@ -147,17 +148,17 @@ export default function ProductsList() {
             <col style={{ width: '68px' }} />
             <col style={{ width: '72px' }} />
           </colgroup>
-          <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0 [&_th]:border [&_th]:border-gray-200 dark:[&_th]:border-gray-600">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600">Code</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600">Désignation</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600">Type</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600">Unité</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600">Stock</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600">CMUP</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600">Valeur</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600">État</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600"></th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600">Code</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600">Désignation</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600">Type</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600">Unité</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600">Stock</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600">CMUP</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600">Valeur</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600">État</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700 [&_td]:border [&_td]:border-gray-100 dark:[&_td]:border-gray-700">

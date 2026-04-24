@@ -100,6 +100,8 @@ declare global {
       createBackup: () => Promise<any>
       listBackups: () => Promise<any>
       restoreBackup: (p: string) => Promise<any>
+      exportFull: () => Promise<any>
+      importFull: () => Promise<any>
 
       // Notifications
       getNotifications: () => Promise<any>

@@ -7,6 +7,7 @@ import { toast } from '../../components/ui/Toast'
 import FormField from '../../components/ui/FormField'
 import { PartySelector } from '../../components/ui/PartySelector'
 import { LinesTable } from '../../components/ui/LinesTable'
+import DocumentNumberField from '../../components/ui/DocumentNumberField'
 import type { Product } from '../../types'
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -48,6 +49,7 @@ const fmt = (n: number) => new Intl.NumberFormat('fr-MA', { minimumFractionDigit
 
 export default function ImportInvoiceForm({ editDocId, defaultValues, onSaved, onCancel }: Props) {
   const [products, setProducts] = useState<Product[]>([])
+  const [customSeq, setCustomSeq] = useState<number | undefined>(undefined)
   const isEdit = !!editDocId
 
   const { register, control, handleSubmit, watch, setValue, reset,
@@ -167,6 +169,7 @@ export default function ImportInvoiceForm({ editDocId, defaultValues, onSaved, o
         type: 'import_invoice', date: data.date,
         party_id: data.party_id, party_type: 'supplier',
         lines: docLines, notes: data.notes, extra, created_by: 1,
+        ...(customSeq !== undefined ? { custom_seq: customSeq } : {}),
       }) as any
 
       if (confirm) {
@@ -196,7 +199,6 @@ export default function ImportInvoiceForm({ editDocId, defaultValues, onSaved, o
           value={watch('party_id')}
           onChange={id => setValue('party_id', id, { shouldValidate: true })}
           onClear={() => setValue('party_id', 0)}
-          error={errors.party_id?.message}
         />
       </FormField>
 
@@ -205,6 +207,13 @@ export default function ImportInvoiceForm({ editDocId, defaultValues, onSaved, o
         <FormField label="Date" required error={errors.date?.message}>
           <input {...register('date')} className="input" type="date" />
         </FormField>
+
+      <FormField label="Numéro du document">
+        <DocumentNumberField
+          docType="import_invoice"
+          onSeqChange={setCustomSeq}
+        />
+      </FormField>
         <FormField label="Devise">
           <select {...register('currency')} className="input">
             {CURRENCIES.map(c => <option key={c}>{c}</option>)}
@@ -257,6 +266,8 @@ export default function ImportInvoiceForm({ editDocId, defaultValues, onSaved, o
         showTva={false}
         priceLabel={`Prix unit. (${currency}) — optionnel`}
         readonlyPrice={false}
+      
+        onProductsRefresh={setProducts}
       />
 
       {/* Résumé répartition landed cost */}

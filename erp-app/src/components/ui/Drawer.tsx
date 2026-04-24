@@ -49,13 +49,12 @@ export default function Drawer({ open, onClose, title, children, defaultWidth = 
 
   return (
     <>
-      {open && <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" />}
+      {open && <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={onClose} />}
 
+      {open && (
       <div
         style={{ width: `${width}px` }}
-        className={`fixed top-0 right-0 h-full z-50 bg-white dark:bg-gray-800 shadow-2xl
-          flex flex-col transition-transform duration-300
-          ${open ? 'translate-x-0' : 'translate-x-full'}`}
+        className="fixed top-0 right-0 h-full z-50 bg-white dark:bg-gray-800 shadow-2xl flex flex-col transition-transform duration-300 translate-x-0"
       >
         {/* Resize handle */}
         <div
@@ -86,6 +85,7 @@ export default function Drawer({ open, onClose, title, children, defaultWidth = 
           {children}
         </div>
       </div>
+      )}
     </>
   )
 }

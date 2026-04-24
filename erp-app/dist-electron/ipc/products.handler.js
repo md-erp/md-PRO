@@ -52,17 +52,17 @@ function registerProductHandlers() {
     (0, index_1.handle)('products:create', (data) => {
         const db = (0, connection_1.getDb)();
         const result = db.prepare(`
-      INSERT INTO products (code, name, unit, type, min_stock, sale_price, tva_rate_id, supplier_id, notes, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(data.code, data.name, data.unit ?? 'unité', data.type ?? 'finished', data.min_stock ?? 0, data.sale_price ?? 0, data.tva_rate_id ?? 5, data.supplier_id ?? null, data.notes ?? null, data.created_by ?? 1);
+      INSERT INTO products (code, name, unit, type, min_stock, sale_price, cmup_price, tva_rate_id, supplier_id, notes, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(data.code, data.name, data.unit ?? 'unité', data.type ?? 'finished', data.min_stock ?? 0, data.sale_price ?? 0, data.cost_price ?? 0, data.tva_rate_id ?? 5, data.supplier_id ?? null, data.notes ?? null, data.created_by ?? 1);
         return { id: result.lastInsertRowid };
     });
     (0, index_1.handle)('products:update', (data) => {
         const db = (0, connection_1.getDb)();
         db.prepare(`
-      UPDATE products SET code=?, name=?, unit=?, type=?, min_stock=?, sale_price=?,
+      UPDATE products SET code=?, name=?, unit=?, type=?, min_stock=?, sale_price=?, cmup_price=?,
         tva_rate_id=?, supplier_id=?, notes=?, updated_at=CURRENT_TIMESTAMP WHERE id=?
-    `).run(data.code, data.name, data.unit, data.type, data.min_stock, data.sale_price, data.tva_rate_id, data.supplier_id, data.notes, data.id);
+    `).run(data.code, data.name, data.unit, data.type, data.min_stock, data.sale_price, data.cost_price ?? 0, data.tva_rate_id, data.supplier_id, data.notes, data.id);
         return { success: true };
     });
     (0, index_1.handle)('products:delete', (id) => {

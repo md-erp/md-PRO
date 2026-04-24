@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { UseFormSetValue, UseFieldArrayReturn } from 'react-hook-form'
-import { Combobox } from './Combobox'
+import { ProductSelector } from './ProductSelector'
 import type { Product } from '../../types'
 
 export interface LineData {
@@ -24,9 +24,9 @@ interface Props {
   showTva?: boolean
   showMargin?: boolean
   productFilter?: (p: Product) => boolean
-  // pour les lignes de réception/import: pas de prix de vente, juste coût
   priceLabel?: string
   readonlyPrice?: boolean
+  onProductsRefresh?: (products: Product[]) => void
 }
 
 const DEFAULT_TVA_KEY = 'erp_last_tva_rate'
@@ -59,6 +59,7 @@ export function LinesTable({
   onRemove, onAdd,
   showDiscount = true, showTva = true, showMargin = false,
   productFilter, priceLabel = 'Prix HT', readonlyPrice = false,
+  onProductsRefresh,
 }: Props) {
   const [productSearches, setProductSearches] = useState<string[]>(
     () => lines.map(l => (l as any).description ?? '')
@@ -66,12 +67,10 @@ export function LinesTable({
   const [lineCmups, setLineCmups] = useState<number[]>(
     () => lines.map(() => 0)
   )
-  // track selected product per line for stock warning
   const [lineProducts, setLineProducts] = useState<(Product | null)[]>(
     () => lines.map(() => null)
   )
 
-  // sync arrays length with fields
   useEffect(() => {
     setProductSearches(prev => {
       const next = lines.map((l, i) => prev[i] !== undefined ? prev[i] : ((l as any).description ?? ''))
@@ -90,20 +89,11 @@ export function LinesTable({
     })
   }, [fields.length])
 
-  // Sync productSearches when lines change (edit mode: reset() called with defaultValues)
   useEffect(() => {
     setProductSearches(lines.map(l => (l as any).description ?? ''))
   }, [JSON.stringify(lines.map(l => (l as any).product_id))])
 
   const filteredProducts = productFilter ? products.filter(productFilter) : products
-
-  const productItems = filteredProducts.map(p => ({
-    id: p.id,
-    label: p.name,
-    sub: `${p.code} · ${p.unit}`,
-    extra: p.sale_price > 0 ? `${new Intl.NumberFormat('fr-MA', { minimumFractionDigits: 2 }).format(p.sale_price)} MAD` : undefined,
-    badge: p.stock_quantity <= (p.min_stock ?? 0) && p.min_stock > 0 ? '⚠' : undefined,
-  }))
 
   function selectProduct(i: number, product: Product) {
     setValue(`lines.${i}.product_id`, product.id)
@@ -117,7 +107,6 @@ export function LinesTable({
 
   const fmt = (n: number) => new Intl.NumberFormat('fr-MA', { minimumFractionDigits: 2 }).format(n)
 
-  // colonnes dynamiques
   const cols = [
     { key: 'product', label: 'Désignation', span: showDiscount && showMargin ? 3 : showDiscount ? 4 : 5 },
     { key: 'qty',     label: 'Qté',         span: 2 },
@@ -170,19 +159,19 @@ export function LinesTable({
             >
               {/* Désignation */}
               <div>
-                <Combobox
-                  items={productItems}
+                <ProductSelector
+                  products={filteredProducts}
                   value={productSearches[i] ?? ''}
                   onChange={v => {
                     const s = [...productSearches]; s[i] = v; setProductSearches(s)
                     setValue(`lines.${i}.product_id`, undefined)
                     setValue(`lines.${i}.description`, v)
                   }}
-                  onSelect={(_, item) => {
-                    const p = products.find(p => p.id === item.id)
-                    if (p) selectProduct(i, p)
+                  onSelect={p => selectProduct(i, p)}
+                  onProductCreated={(product, allProducts) => {
+                    selectProduct(i, product)
+                    if (onProductsRefresh) onProductsRefresh(allProducts)
                   }}
-                  placeholder="Produit ou description..."
                 />
               </div>
 
@@ -193,19 +182,19 @@ export function LinesTable({
                   className="input text-xs text-right"
                   type="number" min="0.01" step="0.01"
                 />
-                {/* stock indicator — inline sous l'input, compact */}
                 {(() => {
                   const p = lineProducts[i]
                   if (!p) return null
                   const qty   = Number(lines[i]?.quantity) || 0
                   const stock = p.stock_quantity ?? 0
+                  const unit  = p.unit ? ` ${p.unit}` : ''
                   if (stock <= 0)
                     return <div className="absolute -bottom-4 right-0 text-[10px] text-red-500 whitespace-nowrap">⚠ épuisé</div>
                   if (qty > stock)
-                    return <div className="absolute -bottom-4 right-0 text-[10px] text-red-500 whitespace-nowrap">⚠ max {stock}</div>
+                    return <div className="absolute -bottom-4 right-0 text-[10px] text-red-500 whitespace-nowrap">⚠ max {stock}{unit}</div>
                   if (p.min_stock > 0 && stock <= p.min_stock)
-                    return <div className="absolute -bottom-4 right-0 text-[10px] text-amber-500 whitespace-nowrap">⚠ bas {stock}</div>
-                  return <div className="absolute -bottom-4 right-0 text-[10px] text-green-600 whitespace-nowrap">✓ {stock}</div>
+                    return <div className="absolute -bottom-4 right-0 text-[10px] text-amber-500 whitespace-nowrap">⚠ bas {stock}{unit}</div>
+                  return <div className="absolute -bottom-4 right-0 text-[10px] text-green-600 whitespace-nowrap">✓ {stock}{unit}</div>
                 })()}
               </div>
 

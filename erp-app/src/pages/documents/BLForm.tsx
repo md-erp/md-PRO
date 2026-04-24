@@ -8,6 +8,7 @@ import FormField from '../../components/ui/FormField'
 import { PartySelector } from '../../components/ui/PartySelector'
 import { LinesTable, getDefaultTva, LinesTotals } from '../../components/ui/LinesTable'
 import type { Product, Document } from '../../types'
+import DocumentNumberField from '../../components/ui/DocumentNumberField'
 
 const schema = z.object({
   date:              z.string().min(1, 'Date requise'),
@@ -33,6 +34,7 @@ interface Props { onSaved: () => void; onCancel: () => void }
 export default function BLForm({ onSaved, onCancel }: Props) {
   const [products, setProducts] = useState<Product[]>([])
   const [invoices, setInvoices] = useState<Document[]>([])
+  const [customSeq, setCustomSeq] = useState<number | undefined>(undefined)
 
   const { register, control, handleSubmit, watch, setValue,
     formState: { errors, isSubmitting } } = useForm<FormData>({
@@ -70,7 +72,8 @@ export default function BLForm({ onSaved, onCancel }: Props) {
           delivery_date: data.delivery_date,
         },
         created_by: 1,
-      }) as any
+          ...(customSeq !== undefined ? { custom_seq: customSeq } : {}),
+        }) as any
 
       // Lier à la facture source si sélectionnée
       if (data.source_invoice_id) {
@@ -95,7 +98,6 @@ export default function BLForm({ onSaved, onCancel }: Props) {
           value={watch('party_id')}
           onChange={(id) => setValue('party_id', id)}
           onClear={() => { setValue('party_id', 0); setInvoices([]) }}
-          error={errors.party_id?.message}
         />
       </FormField>
 
@@ -103,6 +105,13 @@ export default function BLForm({ onSaved, onCancel }: Props) {
         <FormField label="Date BL" required>
           <input {...register('date')} className="input" type="date" />
         </FormField>
+
+      <FormField label="Numéro du document">
+        <DocumentNumberField
+          docType="bl"
+          onSeqChange={setCustomSeq}
+        />
+      </FormField>
         <FormField label="Date de livraison prévue">
           <input {...register('delivery_date')} className="input" type="date" />
         </FormField>
@@ -136,6 +145,8 @@ export default function BLForm({ onSaved, onCancel }: Props) {
         showDiscount
         showTva
         productFilter={p => p.type === 'finished' || p.type === 'semi_finished'}
+      
+        onProductsRefresh={setProducts}
       />
 
       <LinesTotals lines={lines} />

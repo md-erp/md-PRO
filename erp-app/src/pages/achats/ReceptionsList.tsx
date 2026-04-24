@@ -10,6 +10,7 @@ import type { Document, PaginatedResponse } from '../../types'
 const fmt = (n: number) => new Intl.NumberFormat('fr-MA', { minimumFractionDigits: 2 }).format(n ?? 0)
 
 export default function ReceptionsList() {
+
   const [data, setData]           = useState<PaginatedResponse<Document> | null>(null)
   const [search, setSearch]       = useState('')
   const [dateFrom, setDateFrom]   = useState('')
@@ -19,6 +20,7 @@ export default function ReceptionsList() {
   const [showCancelled, setShowCancelled] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [showTotals, setShowTotals]   = useState(false)
   const searchRef = useRef<ReturnType<typeof setTimeout>>()
 
   const load = useCallback(async () => {
@@ -56,8 +58,8 @@ export default function ReceptionsList() {
   })
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between shrink-0">
+    <div className="h-full flex flex-col gap-3 overflow-hidden">
+      <div className="flex items-center justify-between">
         <button className="btn-primary px-5 py-2.5 text-sm font-semibold shadow-sm" onClick={() => setModalOpen(true)}>
           + Nouveau Bon de Réception
         </button>
@@ -91,26 +93,26 @@ export default function ReceptionsList() {
 
       </div>
 
-      <div className="card overflow-auto">
+      <div className="card overflow-y-auto flex-1 min-h-0">
         <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '80px' }} />
             <col style={{ width: '80px' }} />
             <col style={{ width: '180px' }} />
-            <col style={{ width: '147px' }} />
             <col style={{ width: '100px' }} />
             <col style={{ width: '147px' }} />
             <col style={{ width: '90px' }} />
+            <col style={{ width: '100px' }} />
           </colgroup>
-          <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0 z-10 [&_th]:border [&_th]:border-gray-200 dark:[&_th]:border-gray-600">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Numéro</th>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Date</th>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Fournisseur</th>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Total HT</th>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">TVA</th>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Total TTC</th>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Stock</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Numéro</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Date</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Fournisseur</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Total HT</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">TVA</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Total TTC</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Stock</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700 [&_td]:border [&_td]:border-gray-100 dark:[&_td]:border-gray-700">
@@ -150,19 +152,18 @@ export default function ReceptionsList() {
               )
             })}
           </tbody>
-          {!loading && filtered.length > 0 && (
-            <tfoot className="sticky bottom-0 z-10 [&_tr]:bg-gray-50 dark:[&_tr]:bg-[#2a2a2a]">
-              <tr className="bg-gray-50 dark:bg-gray-700/50 border-t-2 border-gray-200 dark:border-gray-600 font-semibold text-sm">
-                <td colSpan={3} className="px-3 py-3 text-gray-500">Total ({filtered.length})</td>
-                <td className="px-3 py-3 text-right text-gray-700 dark:text-gray-200">{fmt(filtered.reduce((s, d) => s + d.total_ht, 0))} MAD</td>
-                <td className="px-3 py-3 text-right text-gray-500">{fmt(filtered.reduce((s, d) => s + d.total_tva, 0))} MAD</td>
-                <td className="px-3 py-3 text-right text-primary font-bold">{fmt(filtered.reduce((s, d) => s + d.total_ttc, 0))} MAD</td>
-                <td />
-              </tr>
-            </tfoot>
-          )}
         </table>
       </div>
+
+      {!loading && filtered.length > 0 && (
+        <button onClick={() => setShowTotals(true)}
+          className="shrink-0 flex items-center justify-between px-4 py-2.5 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors w-full text-left">
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+            Total — {filtered.length} réception{filtered.length > 1 ? 's' : ''} <span className="text-xs text-gray-400">→ détails</span>
+          </span>
+          <span className="text-base font-bold text-primary whitespace-nowrap">{fmt(filtered.reduce((s, d) => s + d.total_ht, 0))} MAD HT</span>
+        </button>
+      )}
 
       {(data?.total ?? 0) > 50 && (
         <div className="flex items-center justify-between shrink-0 text-xs text-gray-500">
@@ -174,6 +175,45 @@ export default function ReceptionsList() {
           </div>
         </div>
       )}
+
+      <Modal open={showTotals} onClose={() => setShowTotals(false)} title="📊 Récapitulatif — Bons de Réception" size="md">
+        <div className="p-6 space-y-5">
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Total HT',          value: filtered.reduce((s,d)=>s+d.total_ht,0),  color: 'text-primary',    bg: 'bg-primary/5' },
+              { label: 'Total TVA',         value: filtered.reduce((s,d)=>s+d.total_tva,0), color: 'text-gray-500',   bg: 'bg-gray-50 dark:bg-gray-700/30' },
+              { label: 'Total TTC',         value: filtered.reduce((s,d)=>s+d.total_ttc,0), color: 'text-gray-700 dark:text-gray-200', bg: 'bg-gray-50 dark:bg-gray-700/30' },
+              { label: 'Stock en attente',  value: filtered.filter(d=>(d as any).pending_stock_count>0).length, isCount: true, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/10' },
+            ].map(r => (
+              <div key={r.label} className={`rounded-xl p-4 ${r.bg}`}>
+                <div className="text-xs text-gray-400 mb-1">{r.label}</div>
+                <div className={`text-lg font-bold ${r.color}`}>
+                  {(r as any).isCount ? r.value : fmt(r.value as number) + ' MAD'}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">État du stock</div>
+            <div className="space-y-2">
+              {[
+                { label: 'Stock appliqué',    count: filtered.filter(d=>(d as any).pending_stock_count===0 && d.status!=='cancelled').length, color: 'text-green-600' },
+                { label: 'En attente',        count: filtered.filter(d=>(d as any).pending_stock_count>0).length, color: 'text-amber-600' },
+                { label: 'Annulés',           count: filtered.filter(d=>d.status==='cancelled').length, color: 'text-gray-400' },
+              ].filter(s=>s.count>0).map(s => (
+                <div key={s.label} className="flex justify-between text-sm py-1.5 border-b border-gray-100 dark:border-gray-700">
+                  <span className="text-gray-500">{s.label}</span>
+                  <span className={`font-semibold ${s.color}`}>{s.count} BR</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center justify-between pt-3 border-t-2 border-primary/20">
+            <span className="font-bold text-gray-700 dark:text-gray-200">TOTAL HT GÉNÉRAL</span>
+            <span className="text-xl font-bold text-primary">{fmt(filtered.reduce((s,d)=>s+d.total_ht,0))} MAD</span>
+          </div>
+        </div>
+      </Modal>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nouveau Bon de Réception" size="xl">
         <ReceptionForm onSaved={() => { setModalOpen(false); load() }} onCancel={() => setModalOpen(false)} />

@@ -6,6 +6,7 @@ import TransformationForm from './TransformationForm'
 const fmt = (n: number) => new Intl.NumberFormat('fr-MA', { minimumFractionDigits: 2 }).format(n ?? 0)
 
 export default function TransformationList() {
+
   const [rows, setRows]           = useState<any[]>([])
   const [loading, setLoading]     = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -37,7 +38,7 @@ export default function TransformationList() {
   const totalOutputs = rows.reduce((s, r) => s + (r.outputs?.length ?? 0), 0)
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="h-full flex flex-col gap-3 overflow-hidden">
 
       {/* ── Toolbar ── */}
       <div className="flex items-center gap-3 shrink-0">
@@ -67,16 +68,16 @@ export default function TransformationList() {
         </div>
 
       {/* ── Table ── */}
-      <div className="card overflow-auto">
+      <div className="card overflow-y-auto flex-1 min-h-0">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0 z-10">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-4 py-3 w-8"></th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Date</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Matière entrée</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">Qté entrée</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Produits obtenus</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">Coût total</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 w-8"></th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Date</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Matière entrée</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">Qté entrée</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Produits obtenus</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">Coût total</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700">

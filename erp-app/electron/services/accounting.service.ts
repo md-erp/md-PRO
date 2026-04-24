@@ -337,7 +337,7 @@ export function createPaymentEntry(
   const fakeDoc = {
     id: payment.id,
     type: 'payment',
-    number: payment.reference ?? `PAY-${payment.id}`,
+    number: payment.reference ?? `P-${payment.id}`,
     date: payment.date,
     party_id: payment.party_id,
     party_type: payment.party_type,

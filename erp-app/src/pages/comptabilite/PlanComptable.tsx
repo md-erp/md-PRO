@@ -82,7 +82,7 @@ export default function PlanComptable() {
   }, {} as Record<number, Account[]>)
 
   return (
-    <div className="h-full overflow-y-auto flex flex-col gap-3">
+    <div className="flex flex-col gap-3 min-h-full">
       <div className="flex items-center gap-3">
         <input value={search} onChange={e => setSearch(e.target.value)}
           className="input max-w-xs" placeholder="Rechercher par code ou nom..." />
@@ -92,7 +92,7 @@ export default function PlanComptable() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto space-y-2">
+      <div className="space-y-2">
         {loading && (
           [...Array(4)].map((_, i) => (
             <div key={i} className="card px-4 py-3 animate-pulse flex items-center gap-3">
@@ -152,7 +152,7 @@ export default function PlanComptable() {
 
       {/* Modal nouveau compte */}
       <Modal open={modal} onClose={() => { setModal(false); setFormError('') }} title="Nouveau compte">
-        <form onSubmit={handleCreate} className="space-y-4">
+        <form onSubmit={e => { e.stopPropagation(); handleCreate(e) }} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-1">Code <span className="text-red-500">*</span></label>

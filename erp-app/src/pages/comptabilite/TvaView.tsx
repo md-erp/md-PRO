@@ -98,7 +98,7 @@ export default function TvaView() {
       {loading && <div className="text-center py-12 text-gray-400">Calcul en cours...</div>}
 
       {data && (
-        <div className="grid grid-cols-2 gap-4 flex-1 overflow-auto">
+        <div className="grid grid-cols-2 gap-4">
           {/* TVA Facturée */}
           <div className="card p-5">
             <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">

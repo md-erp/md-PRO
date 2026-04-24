@@ -72,7 +72,7 @@ function ManualEntryForm({ onSaved, onCancel }: { onSaved: () => void; onCancel:
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-1">
+    <form onSubmit={e => { e.stopPropagation(); handleSubmit(e) }} className="space-y-4 p-1">
       {/* En-tête */}
       <div className="grid grid-cols-3 gap-3">
         <div>
@@ -90,7 +90,7 @@ function ManualEntryForm({ onSaved, onCancel }: { onSaved: () => void; onCancel:
       </div>
 
       {/* Lignes */}
-      <div className="overflow-auto">
+      <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-700/50">
@@ -226,7 +226,7 @@ export default function JournalView() {
       </div>
 
       {/* Entries */}
-      <div className="flex-1 overflow-auto space-y-2">
+      <div className="space-y-2">
         {loading && (
           [...Array(5)].map((_, i) => (
             <div key={i} className="card px-4 py-3 animate-pulse flex items-center gap-4">

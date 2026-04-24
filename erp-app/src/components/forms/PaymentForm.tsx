@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { api } from '../../lib/api'
 import { toast } from '../ui/Toast'
 import FormField from '../ui/FormField'
+import DocumentNumberField from '../ui/DocumentNumberField'
 
 const schema = z.object({
   amount:        z.coerce.number().min(0.01, 'Montant requis'),
@@ -38,7 +39,7 @@ export default function PaymentForm({ partyId, partyType, documentId, maxAmount,
   const [unpaidDocs, setUnpaidDocs] = useState<any[]>([])
   const [selectedDocId, setSelectedDocId] = useState<number | null>(documentId ?? null)
   const [paidAmounts, setPaidAmounts] = useState<Record<number, number>>({})
-
+  const [customSeq, setCustomSeq] = useState<number | undefined>(undefined)
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -92,6 +93,7 @@ export default function PaymentForm({ partyId, partyType, documentId, maxAmount,
         document_id: selectedDocId ?? null,
         status: data.method === 'cash' || data.method === 'bank' ? 'collected' : 'pending',
         created_by: 1,
+        ...(customSeq !== undefined ? { custom_seq: customSeq } : {}),
       })
       toast('Paiement enregistré')
       onSaved()
@@ -128,6 +130,14 @@ export default function PaymentForm({ partyId, partyType, documentId, maxAmount,
           </div>
         </FormField>
       )}
+
+      {/* Numéro de paiement */}
+      <FormField label="Numéro du paiement">
+        <DocumentNumberField
+          docType="payment"
+          onSeqChange={setCustomSeq}
+        />
+      </FormField>
 
       {/* Montant */}
       <FormField label="Montant (MAD)" required error={errors.amount?.message}>

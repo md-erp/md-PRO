@@ -8,6 +8,7 @@ import FormField from '../../components/ui/FormField'
 import { PartySelector } from '../../components/ui/PartySelector'
 import { LinesTable, getDefaultTva, LinesTotals } from '../../components/ui/LinesTable'
 import type { Product } from '../../types'
+import DocumentNumberField from '../../components/ui/DocumentNumberField'
 
 const PAYMENT_METHODS = [
   { value: 'cash',   label: 'Espèces' },
@@ -43,6 +44,7 @@ interface Props {
 
 export default function PurchaseInvoiceForm({ onSaved, onCancel, editDocId, defaultValues }: Props) {
   const [products, setProducts] = useState<Product[]>([])
+  const [customSeq, setCustomSeq] = useState<number | undefined>(undefined)
   const isEdit = !!editDocId
 
   const { register, control, handleSubmit, watch, setValue, reset,
@@ -88,7 +90,8 @@ export default function PurchaseInvoiceForm({ onSaved, onCancel, editDocId, defa
         lines: data.lines, notes: data.notes,
         extra: { payment_method: data.payment_method, due_date: data.due_date },
         created_by: 1,
-      }) as any
+          ...(customSeq !== undefined ? { custom_seq: customSeq } : {}),
+        }) as any
       if (confirm) {
         await api.confirmDocument(doc.id)
         toast(isEdit ? 'Facture mise à jour et confirmée ✓' : 'Facture fournisseur enregistrée ✓')
@@ -113,7 +116,6 @@ export default function PurchaseInvoiceForm({ onSaved, onCancel, editDocId, defa
           value={watch('party_id')}
           onChange={(id) => setValue('party_id', id)}
           onClear={() => setValue('party_id', 0)}
-          error={errors.party_id?.message}
         />
       </FormField>
 
@@ -121,6 +123,13 @@ export default function PurchaseInvoiceForm({ onSaved, onCancel, editDocId, defa
         <FormField label="Date facture" required>
           <input {...register('date')} className="input" type="date" />
         </FormField>
+
+      <FormField label="Numéro du document">
+        <DocumentNumberField
+          docType="purchase_invoice"
+          onSeqChange={setCustomSeq}
+        />
+      </FormField>
         <FormField label="Date d'échéance">
           <input {...register('due_date')} className="input" type="date" />
         </FormField>
@@ -152,6 +161,8 @@ export default function PurchaseInvoiceForm({ onSaved, onCancel, editDocId, defa
         showDiscount
         showTva
         priceLabel="Prix d'achat HT"
+      
+        onProductsRefresh={setProducts}
       />
 
       <LinesTotals lines={lines} />

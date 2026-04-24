@@ -1,19 +1,17 @@
 import { useState } from 'react'
 import ProductsList from './ProductsList'
 import MovementsList from './MovementsList'
-import TransformationList from '../production/TransformationList'
 
 const TABS = [
   { id: 'all',       label: 'Produits' },
   { id: 'movements', label: '🔄 Mouvements' },
-  { id: 'transform', label: '⚙️ Transformation' },
 ] as const
 
 export default function StockPage() {
-  const [tab, setTab] = useState<'all' | 'movements' | 'transform'>('all')
+  const [tab, setTab] = useState<'all' | 'movements'>('all')
   return (
     <div className="h-full flex flex-col">
-      <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4">
+      <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sticky top-0 z-10">
         <div className="flex gap-1 py-1.5">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id as any)}
@@ -26,10 +24,9 @@ export default function StockPage() {
           ))}
         </div>
       </div>
-      <div className="overflow-y-auto p-4">
+      <div className="p-4 flex-1 min-h-0 overflow-hidden">
         {tab === 'all'       && <ProductsList />}
         {tab === 'movements' && <MovementsList />}
-        {tab === 'transform' && <TransformationList />}
       </div>
     </div>
   )

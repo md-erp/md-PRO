@@ -208,7 +208,7 @@ export default function PartyDetail({ id, type, onUpdated }: Props) {
       </div>
 
       {/* ── Content ── */}
-      <div className="flex-1 overflow-auto p-4">
+      <div className="p-4">
 
         {/* Documents */}
         {tab === 'documents' && (
@@ -247,7 +247,7 @@ export default function PartyDetail({ id, type, onUpdated }: Props) {
                     setSelectedDocId(d.id)
                   }}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer transition-colors">
-                      <td className="px-3 py-2.5 font-mono text-xs font-bold text-primary">{d.number}</td>
+                      <td className="px-3 py-2.5"><DocLink docId={d.id} docNumber={d.number} /></td>
                       <td className="px-3 py-2.5 text-gray-500 text-xs">{new Date(d.date).toLocaleDateString('fr-FR')}</td>
                       <td className="px-3 py-2.5 text-gray-600 dark:text-gray-300 text-xs">{DOC_LABELS[d.type] ?? d.type}</td>
                       <td className="px-3 py-2.5 text-right font-semibold">{fmt(d.total_ttc)} MAD</td>

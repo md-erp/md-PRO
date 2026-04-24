@@ -3,6 +3,7 @@ import { api } from '../../lib/api'
 import type { Account } from '../../types'
 
 export default function GrandLivreView() {
+
   const [accounts, setAccounts] = useState<Account[]>([])
   const [selectedAccount, setSelectedAccount] = useState<number>(0)
   const [lines, setLines] = useState<any[]>([])
@@ -28,7 +29,7 @@ export default function GrandLivreView() {
   const totalCredit = lines.reduce((s, l) => s + l.credit, 0)
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="h-full flex flex-col gap-3 overflow-hidden">
       <div className="flex items-center gap-3 flex-wrap">
         <select value={selectedAccount} onChange={e => setSelectedAccount(Number(e.target.value))} className="input w-64">
           <option value={0}>— Choisir un compte —</option>
@@ -73,7 +74,7 @@ export default function GrandLivreView() {
       </div>
 
       {loading && (
-        <div className="card flex-1 overflow-auto animate-pulse p-4 space-y-2">
+        <div className="card animate-pulse p-4 space-y-2">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="flex gap-4">
               <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
@@ -86,7 +87,7 @@ export default function GrandLivreView() {
         </div>
       )}
       {lines.length > 0 && (
-        <div className="card overflow-auto">
+        <div className="card overflow-y-auto flex-1 min-h-0">
           <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
             <colgroup>
               <col style={{ width: '110px' }} />
@@ -96,14 +97,14 @@ export default function GrandLivreView() {
               <col style={{ width: '130px' }} />
               <col style={{ width: '130px' }} />
             </colgroup>
-            <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0 [&_th]:border [&_th]:border-gray-200 dark:[&_th]:border-gray-600">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th className="px-4 py-3 text-center align-middle font-medium text-gray-600">Date</th>
-                <th className="px-4 py-3 text-center align-middle font-medium text-gray-600">Référence</th>
-                <th className="px-4 py-3 text-center align-middle font-medium text-gray-600">Description</th>
-                <th className="px-4 py-3 text-center align-middle font-medium text-gray-600">Débit</th>
-                <th className="px-4 py-3 text-center align-middle font-medium text-gray-600">Crédit</th>
-                <th className="px-4 py-3 text-center align-middle font-medium text-gray-600">Solde</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600">Date</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600">Référence</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600">Description</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600">Débit</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600">Crédit</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600">Solde</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700 [&_td]:border [&_td]:border-gray-100 dark:[&_td]:border-gray-700">

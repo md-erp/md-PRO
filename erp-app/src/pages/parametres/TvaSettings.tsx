@@ -86,7 +86,7 @@ export default function TvaSettings() {
       {/* Formulaire ajout */}
       <div className="card p-4">
         <h3 className="text-sm font-semibold mb-3 text-gray-700 dark:text-gray-300">Ajouter un taux</h3>
-        <form onSubmit={handleAdd} className="flex items-end gap-3">
+        <form onSubmit={e => { e.stopPropagation(); handleAdd(e) }} className="flex items-end gap-3">
           <div className="w-28">
             <label className="block text-xs text-gray-500 mb-1">Taux (%)</label>
             <input

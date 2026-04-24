@@ -87,7 +87,7 @@ export default function ProductionForm({ onSaved, onCancel }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={e => { e.stopPropagation(); handleSubmit(e) }} className="space-y-4">
 
       {/* ── Produit fini ── */}
       <div>

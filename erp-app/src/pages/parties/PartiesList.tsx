@@ -15,7 +15,8 @@ const LIMIT = 50
 
 interface Props { type: 'client' | 'supplier' }
 
-export default function PartiesList({ type }: Props) {
+export default function PartiesList({
+ type }: Props) {
   const [rows, setRows]         = useState<(Client | Supplier)[]>([])
   const [search, setSearch]     = useState('')
   const [loading, setLoading]   = useState(false)
@@ -88,7 +89,7 @@ export default function PartiesList({ type }: Props) {
   ]
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="h-full flex flex-col gap-3 overflow-hidden">
       <div className="flex items-center justify-between shrink-0">
         <button className="btn-primary px-5 py-2.5 text-sm font-semibold shadow-sm"
           onClick={() => { setEditing(null); setModalOpen(true) }}>
@@ -119,7 +120,7 @@ export default function PartiesList({ type }: Props) {
           placeholder={'Rechercher par nom, ICE, telephone...'} />
       </div>
 
-      <div className="card overflow-auto">
+      <div className="card overflow-y-auto flex-1 min-h-0">
         <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '180px' }} />
@@ -129,14 +130,14 @@ export default function PartiesList({ type }: Props) {
             <col style={{ width: '147px' }} />
             <col style={{ width: '72px' }} />
           </colgroup>
-          <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0 z-10 [&_th]:border [&_th]:border-gray-200 dark:[&_th]:border-gray-600">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Nom</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">ICE</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Telephone</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Email</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Solde</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300"></th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Nom</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">ICE</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Telephone</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Email</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Solde</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700 [&_td]:border [&_td]:border-gray-100 dark:[&_td]:border-gray-700">

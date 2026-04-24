@@ -16,6 +16,7 @@ const STATUS_CFG = {
 const fmt = (n: number) => new Intl.NumberFormat('fr-MA', { minimumFractionDigits: 2 }).format(n ?? 0)
 
 export default function ProductionList() {
+
   const [rows, setRows]           = useState<any[]>([])
   const [loading, setLoading]     = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -58,10 +59,10 @@ export default function ProductionList() {
     : rows.filter(r => r.status === statusFilter)
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="h-full flex flex-col gap-3 overflow-hidden">
 
       {/* ── Bouton ── */}
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-3">
         <button className="btn-primary px-5 py-2.5 text-sm font-semibold shadow-sm"
           onClick={() => setModalOpen(true)}>
           + Nouvel Ordre de Production
@@ -112,7 +113,7 @@ export default function ProductionList() {
       </div>
 
       {/* ── Table ── */}
-      <div className="card overflow-auto">
+      <div className="card overflow-y-auto flex-1 min-h-0">
         <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '80px' }} />
@@ -122,14 +123,14 @@ export default function ProductionList() {
             <col style={{ width: '120px' }} />
             <col style={{ width: '120px' }} />
           </colgroup>
-          <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0 z-10 [&_th]:border [&_th]:border-gray-200 dark:[&_th]:border-gray-600">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Date</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Produit fini</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Quantité</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Coût unitaire</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Coût total</th>
-              <th className="px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Statut / Action</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Date</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Produit fini</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Quantité</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Coût unitaire</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Coût total</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Statut / Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700 [&_td]:border [&_td]:border-gray-100 dark:[&_td]:border-gray-700">
@@ -193,19 +194,17 @@ export default function ProductionList() {
               </tr>
             ))}
           </tbody>
-          {!loading && filtered.length > 0 && (
-            <tfoot className="sticky bottom-0 z-10 [&_tr]:bg-gray-50 dark:[&_tr]:bg-[#2a2a2a]">
-              <tr className="bg-gray-50 dark:bg-gray-700/50 border-t-2 border-gray-200 dark:border-gray-600 font-semibold text-sm">
-                <td colSpan={4} className="px-4 py-3 text-gray-500">Total ({filtered.length})</td>
-                <td className="px-4 py-3 text-right text-primary font-bold">
-                  {fmt(filtered.reduce((s, r) => s + r.total_cost, 0))} MAD
-                </td>
-                <td />
-              </tr>
-            </tfoot>
-          )}
         </table>
       </div>
+
+      {!loading && filtered.length > 0 && (
+        <div className="shrink-0 flex items-center justify-between px-4 py-2.5 rounded-xl border border-primary/20 bg-primary/5">
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+            Total — {filtered.length} ordre{filtered.length > 1 ? 's' : ''}
+          </span>
+          <span className="text-base font-bold text-primary whitespace-nowrap" style={{ marginRight: "calc(90px + 72px)" }}>{fmt(filtered.reduce((s, r) => s + r.total_cost, 0))} MAD</span>
+        </div>
+      )}
 
       {/* ── Modals ── */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nouvel Ordre de Production" size="lg">

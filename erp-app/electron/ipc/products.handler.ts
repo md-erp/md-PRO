@@ -48,12 +48,12 @@ export function registerProductHandlers(): void {
   handle('products:create', (data) => {
     const db = getDb()
     const result = db.prepare(`
-      INSERT INTO products (code, name, unit, type, min_stock, sale_price, tva_rate_id, supplier_id, notes, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO products (code, name, unit, type, min_stock, sale_price, cmup_price, tva_rate_id, supplier_id, notes, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       data.code, data.name, data.unit ?? 'unité', data.type ?? 'finished',
-      data.min_stock ?? 0, data.sale_price ?? 0, data.tva_rate_id ?? 5,
-      data.supplier_id ?? null, data.notes ?? null, data.created_by ?? 1
+      data.min_stock ?? 0, data.sale_price ?? 0, data.cost_price ?? 0,
+      data.tva_rate_id ?? 5, data.supplier_id ?? null, data.notes ?? null, data.created_by ?? 1
     )
     return { id: result.lastInsertRowid }
   })
@@ -61,11 +61,11 @@ export function registerProductHandlers(): void {
   handle('products:update', (data) => {
     const db = getDb()
     db.prepare(`
-      UPDATE products SET code=?, name=?, unit=?, type=?, min_stock=?, sale_price=?,
+      UPDATE products SET code=?, name=?, unit=?, type=?, min_stock=?, sale_price=?, cmup_price=?,
         tva_rate_id=?, supplier_id=?, notes=?, updated_at=CURRENT_TIMESTAMP WHERE id=?
     `).run(
       data.code, data.name, data.unit, data.type, data.min_stock,
-      data.sale_price, data.tva_rate_id, data.supplier_id, data.notes, data.id
+      data.sale_price, data.cost_price ?? 0, data.tva_rate_id, data.supplier_id, data.notes, data.id
     )
     return { success: true }
   })

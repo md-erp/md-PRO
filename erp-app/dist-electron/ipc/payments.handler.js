@@ -45,11 +45,36 @@ function registerPaymentHandlers() {
     (0, index_1.handle)('payments:create', (data) => {
         const db = (0, connection_1.getDb)();
         const tx = db.transaction(() => {
+            // توليد رقم مرجعي — يجد أصغر رقم متاح >= المطلوب
+            // يدعم الصيغتين القديمة P-5 والجديدة P-0005
+            const allRefs = db.prepare("SELECT reference FROM payments WHERE reference LIKE 'P-%'").all();
+            const usedSet = new Set(allRefs.map((r) => {
+                const parts = r.reference.split('-');
+                const num = parseInt(parts[parts.length - 1] ?? '0', 10);
+                return isNaN(num) ? -1 : num;
+            }).filter((n) => n >= 0));
+            const maxSeq = usedSet.size > 0 ? Math.max(...usedSet) : 0;
+            const startFrom = (data.custom_seq !== undefined && data.custom_seq >= 1)
+                ? data.custom_seq
+                : maxSeq + 1;
+            // إذا اختار المستخدم رقماً يدوياً وكان مستخدماً → نرفض
+            if (data.custom_seq !== undefined && usedSet.has(data.custom_seq)) {
+                // نجد أقرب رقم متاح لإخبار المستخدم
+                let suggestion = data.custom_seq + 1;
+                while (usedSet.has(suggestion))
+                    suggestion++;
+                throw new Error(`Le numéro P-${String(data.custom_seq).padStart(4, '0')} est déjà utilisé. Prochain disponible: P-${String(suggestion).padStart(4, '0')}`);
+            }
+            // نجد أصغر رقم >= startFrom غير مستخدم
+            let seq = startFrom;
+            while (usedSet.has(seq))
+                seq++;
+            const reference = `P-${String(seq).padStart(4, '0')}`;
             const result = db.prepare(`
         INSERT INTO payments (party_id, party_type, amount, method, date, due_date,
-          cheque_number, bank, status, document_id, notes, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(data.party_id, data.party_type, data.amount, data.method, data.date, data.due_date ?? null, data.cheque_number ?? null, data.bank ?? null, data.status ?? 'pending', data.document_id ?? null, data.notes ?? null, data.created_by ?? 1);
+          cheque_number, bank, status, document_id, notes, created_by, reference)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(data.party_id, data.party_type, data.amount, data.method, data.date, data.due_date ?? null, data.cheque_number ?? null, data.bank ?? null, data.status ?? 'pending', data.document_id ?? null, data.notes ?? null, data.created_by ?? 1, reference);
             const paymentId = result.lastInsertRowid;
             const isCheque = data.method === 'cheque' || data.method === 'lcn';
             const isPending = (data.status ?? 'pending') === 'pending';
@@ -72,7 +97,7 @@ function registerPaymentHandlers() {
                     amount: data.amount,
                     method: data.method,
                     date: data.date,
-                    reference: `PAY-${paymentId}`,
+                    reference: `P-${paymentId}`,
                 }, data.created_by ?? 1);
             }
             (0, audit_service_1.logAudit)(db, {
@@ -115,7 +140,7 @@ function registerPaymentHandlers() {
                     amount: payment.amount,
                     method: payment.method,
                     date: new Date().toISOString().split('T')[0],
-                    reference: `PAY-${payment.id}`,
+                    reference: `P-${payment.id}`,
                 }, 1);
             }
             // عند إلغاء شيك cleared → إلغاء التخصيص

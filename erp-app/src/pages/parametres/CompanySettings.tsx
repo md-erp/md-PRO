@@ -121,7 +121,7 @@ export default function CompanySettings() {
     <div className="max-w-4xl">
       <h2 className="text-lg font-semibold mb-6">Informations de l'entreprise</h2>
 
-      <form onSubmit={handleSave} className="space-y-6">
+      <form onSubmit={e => { e.stopPropagation(); handleSave(e) }} className="space-y-6">
         {/* Logo Section */}
         <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">

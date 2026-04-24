@@ -78,7 +78,8 @@ interface Props {
 
 // ─── component ───────────────────────────────────────────────────────────────
 
-export default function InvoicesList({ docType, hideNewButton = false }: Props) {
+export default function InvoicesList({
+ docType, hideNewButton = false }: Props) {
   const [data, setData]           = useState<PaginatedResponse<Document> | null>(null)
   const [search, setSearch]       = useState('')
   const [statusFilter, setStatus] = useState('all')
@@ -92,6 +93,7 @@ export default function InvoicesList({ docType, hideNewButton = false }: Props) 
   const [modalOpen, setModalOpen]         = useState(false)
   const [selectedDocId, setSelectedDocId] = useState<number | null>(null)
   const [cancelId, setCancelId]           = useState<number | null>(null)
+  const [showTotals, setShowTotals]       = useState(false)
 
   // stats
   const [stats, setStats] = useState({
@@ -223,9 +225,7 @@ export default function InvoicesList({ docType, hideNewButton = false }: Props) 
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col gap-3">
-
-      {/* ── صف الأزرار الرئيسية — فوق كل شيء ── */}
+    <div className="h-full flex flex-col gap-3 overflow-hidden">
       <div className="flex items-center justify-between shrink-0">
         {!hideNewButton ? (
           <button
@@ -349,7 +349,7 @@ export default function InvoicesList({ docType, hideNewButton = false }: Props) 
       </div>
 
       {/* ── table ── */}
-      <div className="card overflow-auto" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+      <div className="card overflow-y-auto flex-1 min-h-0">
         <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '65px' }} />
@@ -360,21 +360,21 @@ export default function InvoicesList({ docType, hideNewButton = false }: Props) 
             <col style={{ width: '147px' }} />
             <col style={{ width: '68px' }} />
           </colgroup>
-          <thead className="[&_th]:border [&_th]:border-slate-200 dark:[&_th]:border-slate-600 [&_th]:bg-slate-50 dark:[&_th]:bg-[#2a2a2a]">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 cursor-pointer hover:text-primary sticky top-0 z-10" onClick={() => toggleSort('number')}>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 cursor-pointer hover:text-primary" onClick={() => toggleSort('number')}>
                 Numéro <SortIcon field="number" />
               </th>
-              <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 cursor-pointer hover:text-primary sticky top-0 z-10" onClick={() => toggleSort('date')}>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 cursor-pointer hover:text-primary" onClick={() => toggleSort('date')}>
                 Date <SortIcon field="date" />
               </th>
-              <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 sticky top-0 z-10">Client</th>
-              <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 cursor-pointer hover:text-primary whitespace-nowrap sticky top-0 z-10" onClick={() => toggleSort('amount')}>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Client</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 cursor-pointer hover:text-primary whitespace-nowrap" onClick={() => toggleSort('amount')}>
                 Total HT <SortIcon field="amount" />
               </th>
-              <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 whitespace-nowrap sticky top-0 z-10">TVA</th>
-              <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 whitespace-nowrap sticky top-0 z-10">Total TTC</th>
-              <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 whitespace-nowrap sticky top-0 z-10">Statut</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 whitespace-nowrap">TVA</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 whitespace-nowrap">Total TTC</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 whitespace-nowrap">Statut</th>
             </tr>
           </thead>
 
@@ -480,28 +480,22 @@ export default function InvoicesList({ docType, hideNewButton = false }: Props) 
             })}
           </tbody>
 
-          {/* ── Total bar ── */}
-          {!loading && rows.length > 0 && (
-            <tfoot className="sticky bottom-0 z-10">
-              <tr className="bg-gray-50 dark:bg-[#2a2a2a] border-t-2 border-gray-200 dark:border-[#3d3d3d] font-semibold text-sm">
-                <td colSpan={3} className="px-3 py-3 text-left text-slate-500 dark:text-slate-400">
-                  Total ({rows.length} document{rows.length > 1 ? 's' : ''})
-                </td>
-                <td className="px-3 py-3 text-center text-slate-700 dark:text-slate-200">
-                  {fmt(rows.reduce((s, d) => s + d.total_ht, 0))} MAD
-                </td>
-                <td className="px-3 py-3 text-center text-slate-500 dark:text-slate-400">
-                  {fmt(rows.reduce((s, d) => s + d.total_tva, 0))} MAD
-                </td>
-                <td className="px-3 py-3 text-center text-primary dark:text-primary-100 font-bold">
-                  {fmt(rows.reduce((s, d) => s + d.total_ttc, 0))} MAD
-                </td>
-                <td></td>
-              </tr>
-            </tfoot>
-          )}
         </table>
       </div>
+
+      {!loading && rows.length > 0 && (
+        <button
+          onClick={() => setShowTotals(true)}
+          className="shrink-0 flex items-center justify-between px-4 py-2.5 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer w-full text-left">
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+            Total — {rows.length} document{rows.length > 1 ? 's' : ''} &nbsp;
+            <span className="text-xs text-gray-400">cliquer pour détails →</span>
+          </span>
+          <span className="text-base font-bold text-primary whitespace-nowrap" style={{ marginRight: "calc(90px + 72px)" }}>
+            {fmt(rows.reduce((s, d) => s + d.total_ttc, 0))} MAD
+          </span>
+        </button>
+      )}
 
       {/* ── pagination ── */}
       {data && data.total > 50 && (
@@ -518,6 +512,70 @@ export default function InvoicesList({ docType, hideNewButton = false }: Props) 
           </div>
         </div>
       )}
+
+      {/* ── Totals Modal ── */}
+      <Modal open={showTotals} onClose={() => setShowTotals(false)}
+        title={`📊 Récapitulatif — ${DOC_LABELS[docType] ?? 'Documents'}`} size="md">
+        <div className="p-6 space-y-5">
+
+          {/* Montants */}
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Total HT',  value: rows.reduce((s,d) => s + d.total_ht,  0), color: 'text-gray-700 dark:text-gray-200', bg: 'bg-gray-50 dark:bg-gray-700/30' },
+              { label: 'Total TVA', value: rows.reduce((s,d) => s + d.total_tva, 0), color: 'text-gray-500',                    bg: 'bg-gray-50 dark:bg-gray-700/30' },
+              ...(docType === 'invoice' ? [
+                { label: 'Impayé',    value: stats.unpaidAmount,  color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/10' },
+                { label: 'En retard', value: stats.overdueAmount, color: 'text-red-600',    bg: 'bg-red-50 dark:bg-red-900/10' },
+              ] : []),
+            ].map(r => (
+              <div key={r.label} className={`rounded-xl p-4 ${r.bg}`}>
+                <div className="text-xs text-gray-400 mb-1">{r.label}</div>
+                <div className={`text-lg font-bold ${r.color}`}>{fmt(r.value)} MAD</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Statuts */}
+          <div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Répartition par statut</div>
+            <div className="space-y-1.5">
+              {(() => {
+                const statusGroups: Record<string, { label: string; color: string }> = {
+                  draft:     { label: 'Brouillons',  color: 'text-gray-500' },
+                  confirmed: { label: 'Confirmés',   color: 'text-blue-600' },
+                  paid:      { label: 'Payés',       color: 'text-green-600' },
+                  partial:   { label: 'Partiels',    color: 'text-amber-600' },
+                  delivered: { label: 'Livrés',      color: 'text-green-600' },
+                  cancelled: { label: 'Annulés',     color: 'text-gray-400' },
+                }
+                const allRows = data?.rows ?? []
+                return Object.entries(statusGroups).map(([status, cfg]) => {
+                  const count = allRows.filter(d => d.status === status).length
+                  if (count === 0) return null
+                  const amount = allRows.filter(d => d.status === status).reduce((s,d) => s + d.total_ttc, 0)
+                  const pct = rows.length > 0 ? (count / allRows.length) * 100 : 0
+                  return (
+                    <div key={status} className="flex items-center gap-3">
+                      <div className="text-xs text-gray-500 w-20 shrink-0">{cfg.label}</div>
+                      <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
+                        <div className="bg-primary h-1.5 rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className={`text-xs font-semibold w-6 text-right ${cfg.color}`}>{count}</div>
+                      <div className="text-xs text-gray-400 w-28 text-right">{fmt(amount)} MAD</div>
+                    </div>
+                  )
+                }).filter(Boolean)
+              })()}
+            </div>
+          </div>
+
+          {/* Total final */}
+          <div className="flex items-center justify-between pt-3 border-t-2 border-primary/20">
+            <span className="font-bold text-gray-700 dark:text-gray-200">TOTAL TTC GÉNÉRAL</span>
+            <span className="text-xl font-bold text-primary">{fmt(rows.reduce((s,d) => s + d.total_ttc, 0))} MAD</span>
+          </div>
+        </div>
+      </Modal>
 
       {/* ── modals ── */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)}

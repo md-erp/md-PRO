@@ -15,7 +15,7 @@ export default function ProductionPage() {
   const [tab, setTab] = useState<TabId>('orders')
   return (
     <div className="h-full flex flex-col">
-      <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4">
+      <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sticky top-0 z-10">
         <div className="flex gap-1 py-1.5">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
@@ -28,7 +28,7 @@ export default function ProductionPage() {
           ))}
         </div>
       </div>
-      <div className="overflow-y-auto p-4">
+      <div className="p-4 flex-1 min-h-0 overflow-hidden">
         {tab === 'orders'    && <ProductionList />}
         {tab === 'bom'       && <BomList />}
         {tab === 'transform' && <TransformationList />}

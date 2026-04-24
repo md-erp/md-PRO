@@ -63,9 +63,7 @@ function registerPdfHandlers() {
     });
     (0, index_1.handle)('pdf:generateFromHtml', async (data) => {
         const win = electron_1.BrowserWindow.getAllWindows()[0];
-        // حفظ مباشر في مجلد Downloads بدون dialog
-        const downloadsDir = electron_2.app.getPath('downloads');
-        const filePath = (0, path_1.join)(downloadsDir, data.filename);
+        const { shell } = require('electron');
         const pdfWin = new electron_1.BrowserWindow({
             show: false,
             webPreferences: { nodeIntegration: false, contextIsolation: true },
@@ -81,11 +79,27 @@ function registerPdfHandlers() {
                 pageSize: 'A4',
                 margins: { top: 0.4, bottom: 0.4, left: 0.4, right: 0.4 },
             });
-            (0, fs_1.writeFileSync)(filePath, pdfBuffer);
-            // فتح مجلد Downloads مع تحديد الملف
-            const { shell } = require('electron');
-            shell.showItemInFolder(filePath);
-            win?.focus();
+            let filePath;
+            if (process.platform === 'linux') {
+                // على Linux: حفظ مباشر في Downloads بدون dialog
+                filePath = (0, path_1.join)(electron_2.app.getPath('downloads'), data.filename);
+                (0, fs_1.writeFileSync)(filePath, pdfBuffer);
+                shell.showItemInFolder(filePath);
+                win?.focus();
+            }
+            else {
+                // على Windows/Mac: dialog اختيار المسار
+                const result = await electron_1.dialog.showSaveDialog(win, {
+                    title: 'Enregistrer le PDF',
+                    defaultPath: data.filename,
+                    filters: [{ name: 'PDF', extensions: ['pdf'] }],
+                });
+                win?.focus();
+                if (result.canceled || !result.filePath)
+                    return { success: false, canceled: true };
+                filePath = result.filePath;
+                (0, fs_1.writeFileSync)(filePath, pdfBuffer);
+            }
             return { success: true, path: filePath };
         }
         finally {

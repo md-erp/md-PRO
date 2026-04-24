@@ -3,6 +3,7 @@ import { api } from '../../lib/api'
 import Modal from '../../components/ui/Modal'
 import { toast } from '../../components/ui/Toast'
 import type { Product, StockMovement } from '../../types'
+import DocLink from '../../components/ui/DocLink'
 
 interface Props { id: number; onClose?: () => void; onStockChanged?: () => void }
 
@@ -132,19 +133,19 @@ export default function ProductDetail({ id, onStockChanged }: Props) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-4">
+      <div className="p-4">
         {tab === 'movements' && (
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed">
             <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
               <tr>
-                <th className="px-3 py-2 text-left font-medium text-gray-600">Date</th>
-                <th className="px-3 py-2 text-center font-medium text-gray-600">Type</th>
-                <th className="px-3 py-2 text-right font-medium text-gray-600">Quantité</th>
-                <th className="px-3 py-2 text-right font-medium text-gray-600">Coût unit.</th>
-                <th className="px-3 py-2 text-right font-medium text-gray-600">CMUP avant→après</th>
-                <th className="px-3 py-2 text-left font-medium text-gray-600">Source</th>
-                <th className="px-3 py-2 text-center font-medium text-gray-600">Statut</th>
-                <th className="px-3 py-2 w-24"></th>
+                <th style={{width:'90px'}} className="px-3 py-2 text-left font-medium text-gray-600 text-xs">Date</th>
+                <th style={{width:'80px'}} className="px-3 py-2 text-center font-medium text-gray-600 text-xs">Type</th>
+                <th style={{width:'90px'}} className="px-3 py-2 text-right font-medium text-gray-600 text-xs">Quantité</th>
+                <th style={{width:'100px'}} className="px-3 py-2 text-right font-medium text-gray-600 text-xs">Coût unit.</th>
+                <th style={{width:'160px'}} className="px-3 py-2 text-right font-medium text-gray-600 text-xs">CMUP avant→après</th>
+                <th className="px-3 py-2 text-left font-medium text-gray-600 text-xs">Source</th>
+                <th style={{width:'32px'}} className="px-3 py-2"></th>
+                <th style={{width:'90px'}} className="px-3 py-2"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -169,15 +170,14 @@ export default function ProductDetail({ id, onStockChanged }: Props) {
                       : `${fmt(m.cmup_before)} → ?`}
                   </td>
                   <td className="px-3 py-2 text-xs text-primary">
-                    {m.document_id ? `Doc #${m.document_id}` :
-                     m.production_id ? `Prod #${m.production_id}` :
-                     m.transformation_id ? `Trans #${m.transformation_id}` :
-                     m.manual_ref ?? '—'}
+                    {(m as any).document_number
+                      ? <span className="font-mono">{(m as any).document_number}</span>
+                      : m.production_id ? `Prod #${m.production_id}`
+                      : m.transformation_id ? `Trans #${m.transformation_id}`
+                      : m.manual_ref ?? '—'}
                   </td>
-                  <td className="px-3 py-2 text-center">
-                    {m.applied
-                      ? <span className="badge-green text-xs">✅</span>
-                      : <span className="badge-orange text-xs">⏳</span>}
+                  <td className="px-3 py-2 text-center text-sm leading-none">
+                    {m.applied ? '✅' : '⏳'}
                   </td>
                   <td className="px-3 py-2 text-right">
                     {!m.applied && (
@@ -275,7 +275,7 @@ export default function ProductDetail({ id, onStockChanged }: Props) {
                     return (
                       <div key={d.id} className="flex items-center gap-2 text-xs bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
                         <span className={typeColors[d.type] ?? 'badge-gray'}>{d.type}</span>
-                        <span className="font-mono text-primary">{d.number}</span>
+                        <DocLink docId={d.id} docNumber={d.number} />
                         <span className="text-gray-400">{new Date(d.date).toLocaleDateString('fr-FR')}</span>
                         {d.party_name && <span className="text-gray-500 truncate">{d.party_name}</span>}
                         <span className="ml-auto font-semibold">{fmt(d.quantity)} {product.unit}</span>
@@ -313,7 +313,7 @@ export default function ProductDetail({ id, onStockChanged }: Props) {
 
       {/* Manual movement modal */}
       <Modal open={manualModal} onClose={() => setManualModal(false)} title="Mouvement de stock manuel">
-        <form onSubmit={handleManual} className="space-y-4">
+        <form onSubmit={e => { e.stopPropagation(); handleManual(e) }} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Type de mouvement</label>
             <div className="flex gap-3">

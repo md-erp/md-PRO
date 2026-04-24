@@ -116,7 +116,7 @@ export default function BomForm({ bom, onSaved, onCancel }: Props) {
   const fmt = (n: number) => new Intl.NumberFormat('fr-MA', { minimumFractionDigits: 2 }).format(n)
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={e => { e.stopPropagation(); handleSubmit(e) }} className="space-y-5">
 
       {/* ── Produit fini ── */}
       {!isEdit ? (

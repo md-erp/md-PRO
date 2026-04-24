@@ -5,6 +5,7 @@ import Drawer from '../../components/ui/Drawer'
 import Modal from '../../components/ui/Modal'
 import PaymentForm from '../../components/forms/PaymentForm'
 import { PartySelector } from '../../components/ui/PartySelector'
+import DocLink from '../../components/ui/DocLink'
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('fr-MA', { minimumFractionDigits: 2 }).format(n ?? 0)
@@ -64,7 +65,7 @@ function PaymentDetail({ payment, onClose, onClear, onBounce }: {
         {payment.document_number ? (
           <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
             <span className="text-gray-500">Facture</span>
-            <span className="font-mono font-semibold text-primary">{payment.document_number}</span>
+            <DocLink docId={payment.document_id} docNumber={payment.document_number} />
           </div>
         ) : (
           <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
@@ -167,6 +168,7 @@ function NewPaymentModal({ onSaved, onClose }: { onSaved: () => void; onClose: (
 
 // ── Main Page ────────────────────────────────────────────────────────────────
 export default function PaiementsPage() {
+
   const [payments, setPayments]   = useState<any[]>([])
   const [loading, setLoading]     = useState(false)
   const [partyType, setPartyType] = useState<'all' | 'client' | 'supplier'>('all')
@@ -176,6 +178,8 @@ export default function PaiementsPage() {
   const [search, setSearch]       = useState('')
   const [selected, setSelected]   = useState<any | null>(null)
   const [showNew, setShowNew]     = useState(false)
+  const [sortDir, setSortDir]     = useState<'asc' | 'desc'>('desc')
+  const [showTotals, setShowTotals] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -230,6 +234,15 @@ export default function PaiementsPage() {
     return true
   })
 
+  const getSeq = (p: any) => {
+    const ref = p.reference ?? `P-${p.id}`
+    const parts = ref.split('-')
+    return parseInt(parts[parts.length - 1] ?? '0', 10) || p.id
+  }
+  const sortedFiltered = [...filtered].sort((a, b) =>
+    sortDir === 'asc' ? getSeq(a) - getSeq(b) : getSeq(b) - getSeq(a)
+  )
+
   const totalAmount = filtered.reduce((s, p) => s + (p.amount ?? 0), 0)
   const byCash   = filtered.filter(p => p.method === 'cash').reduce((s, p) => s + p.amount, 0)
   const byBank   = filtered.filter(p => p.method === 'bank').reduce((s, p) => s + p.amount, 0)
@@ -237,7 +250,7 @@ export default function PaiementsPage() {
   const pending  = filtered.filter(p => p.status === 'pending').length
 
   return (
-    <div className="h-full overflow-y-auto flex flex-col gap-3 p-4">
+    <div className="h-full flex flex-col gap-3 p-4 overflow-hidden">
 
       {/* Header */}
       <div className="flex items-center justify-between shrink-0">
@@ -293,34 +306,39 @@ export default function PaiementsPage() {
       </div>
 
       {/* Table */}
-      <div className="card overflow-auto">
-        <table className="w-full text-sm table-fixed border-collapse" style={{ tableLayout: 'fixed' }}>
+      <div className="card overflow-y-auto flex-1 min-h-0">
+        <table className="w-full text-sm table-fixed border-collapse" style={{ tableLayout: 'fixed', minWidth: '800px' }}>
           <colgroup>
-            <col style={{ width: '96px' }} />
-            <col style={{ width: '22%' }} />
-            <col style={{ width: '110px' }} />
-            <col style={{ width: '18%' }} />
+            <col style={{ width: '60px', minWidth: '60px' }} />
+            <col style={{ width: '75px', minWidth: '75px' }} />
+            <col style={{ width: '20%' }} />
             <col style={{ width: '100px' }} />
-            <col style={{ width: '160px' }} />
-            <col style={{ width: '100px' }} />
+            <col style={{ width: '16%' }} />
+            <col style={{ width: '90px' }} />
+            <col style={{ width: '140px' }} />
+            <col style={{ width: '90px' }} />
             <col style={{ width: '72px' }} />
           </colgroup>
-          <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0 z-10 [&_th]:border [&_th]:border-gray-200 dark:[&_th]:border-gray-600">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Date</th>
-              <th className="px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Client / Fournisseur</th>
-              <th className="px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Mode</th>
-              <th className="px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Référence</th>
-              <th className="px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Échéance</th>
-              <th className="px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Montant</th>
-              <th className="px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Statut</th>
-              <th className="px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"></th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide cursor-pointer select-none hover:text-primary"
+                onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}>
+                N° {sortDir === 'asc' ? '↑' : '↓'}
+              </th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Date</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Client / Fournisseur</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Mode</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Référence</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Échéance</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Montant</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Statut</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-center align-middle text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700 [&_td]:border [&_td]:border-gray-100 dark:[&_td]:border-gray-700">
             {loading && [...Array(5)].map((_, i) => (
               <tr key={i} className="animate-pulse">
-                {[...Array(8)].map((_, j) => (
+                {[...Array(9)].map((_, j) => (
                   <td key={j} className="px-3 py-3">
                     <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
                   </td>
@@ -329,23 +347,26 @@ export default function PaiementsPage() {
             ))}
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center py-16">
+                <td colSpan={9} className="text-center py-16">
                   <div className="text-4xl mb-3">💳</div>
                   <div className="text-gray-500 font-medium">Aucun paiement</div>
                   <div className="text-gray-400 text-xs mt-1">Ajustez les filtres ou créez un nouveau paiement</div>
                 </td>
               </tr>
             )}
-            {!loading && filtered.map((p, i) => (
+            {!loading && sortedFiltered.map((p, i) => (
               <tr key={p.id ?? i}
                 onMouseDown={e => { (e.currentTarget as any)._mdX = e.clientX; (e.currentTarget as any)._mdY = e.clientY }}
-                  onClick={e => {
-                    const el = e.currentTarget as any
-                    if (Math.abs(e.clientX-(el._mdX??e.clientX))>5||Math.abs(e.clientY-(el._mdY??e.clientY))>5) return
-                    if ((e.target as HTMLElement).closest('button')) return
-                    setSelected(p)
-                  }}
+                onClick={e => {
+                  const el = e.currentTarget as any
+                  if (Math.abs(e.clientX-(el._mdX??e.clientX))>5||Math.abs(e.clientY-(el._mdY??e.clientY))>5) return
+                  if ((e.target as HTMLElement).closest('button')) return
+                  setSelected(p)
+                }}
                 className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                <td className="px-3 py-3 text-center align-middle">
+                  <span className="font-mono text-xs font-semibold text-primary">{p.reference ?? `P-${p.id}`}</span>
+                </td>
                 <td className="px-3 py-3 text-center align-middle text-xs text-gray-500 whitespace-nowrap">
                   {new Date(p.date).toLocaleDateString('fr-FR')}
                 </td>
@@ -357,7 +378,9 @@ export default function PaiementsPage() {
                 </td>
                 <td className="px-3 py-3 text-center align-middle text-xs">{METHOD_LABELS[p.method] ?? p.method}</td>
                 <td className="px-3 py-3 text-center align-middle text-xs font-mono text-gray-600 dark:text-gray-300 truncate">
-                  {p.cheque_number ?? (p.bank ?? '—')}
+                  {p.document_id
+                    ? <DocLink docId={p.document_id} docNumber={p.document_number} />
+                    : (p.cheque_number ?? (p.bank ?? '—'))}
                 </td>
                 <td className="px-3 py-3 text-center align-middle text-xs text-gray-500 whitespace-nowrap">
                   {p.due_date ? new Date(p.due_date).toLocaleDateString('fr-FR') : '—'}
@@ -387,21 +410,57 @@ export default function PaiementsPage() {
               </tr>
             ))}
           </tbody>
-          {!loading && filtered.length > 0 && (
-            <tfoot className="sticky bottom-0 z-10 [&_tr]:bg-gray-50 dark:[&_tr]:bg-[#2a2a2a]">
-              <tr className="bg-gray-50 dark:bg-gray-700/50 border-t-2 border-gray-200 dark:border-gray-600">
-                <td colSpan={5} className="px-3 py-3 text-sm font-semibold text-gray-500">
-                  Total ({filtered.length} paiement{filtered.length > 1 ? 's' : ''})
-                </td>
-                <td className="px-3 py-3 text-right font-bold text-primary whitespace-nowrap">
-                  {fmt(totalAmount)} MAD
-                </td>
-                <td colSpan={2} />
-              </tr>
-            </tfoot>
-          )}
         </table>
       </div>
+
+      {/* Total Bar */}
+      {!loading && filtered.length > 0 && (
+        <div
+          onClick={() => setShowTotals(true)}
+          className="flex items-center justify-between px-4 py-2.5 rounded-xl border border-primary/20 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors shrink-0">
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+            Total — {filtered.length} paiement{filtered.length > 1 ? 's' : ''}
+          </span>
+          <span className="text-base font-bold text-primary">{fmt(totalAmount)} MAD</span>
+        </div>
+      )}
+
+      {/* Totals Modal */}
+      <Modal open={showTotals} onClose={() => setShowTotals(false)} title="📊 Récapitulatif des paiements" size="md">
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: '💵 Espèces',     value: byCash,   color: 'text-green-600',  count: filtered.filter(p => p.method === 'cash').length },
+              { label: '🏦 Virement',    value: byBank,   color: 'text-blue-600',   count: filtered.filter(p => p.method === 'bank').length },
+              { label: '📝 Chèque',      value: filtered.filter(p => p.method === 'cheque').reduce((s,p) => s+p.amount,0), color: 'text-amber-600', count: filtered.filter(p => p.method === 'cheque').length },
+              { label: '📋 LCN',         value: filtered.filter(p => p.method === 'lcn').reduce((s,p) => s+p.amount,0),    color: 'text-purple-600', count: filtered.filter(p => p.method === 'lcn').length },
+            ].map(r => (
+              <div key={r.label} className="card p-3">
+                <div className="text-xs text-gray-500 mb-1">{r.label} <span className="text-gray-400">({r.count})</span></div>
+                <div className={`font-bold ${r.color}`}>{fmt(r.value)} MAD</div>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {[
+              { label: 'Clients',       value: filtered.filter(p => p.party_type === 'client').reduce((s,p) => s+p.amount,0),   count: filtered.filter(p => p.party_type === 'client').length },
+              { label: 'Fournisseurs',  value: filtered.filter(p => p.party_type === 'supplier').reduce((s,p) => s+p.amount,0), count: filtered.filter(p => p.party_type === 'supplier').length },
+              { label: 'En attente',    value: filtered.filter(p => p.status === 'pending').reduce((s,p) => s+p.amount,0),      count: filtered.filter(p => p.status === 'pending').length },
+              { label: 'Encaissés',     value: filtered.filter(p => p.status === 'cleared' || p.status === 'collected').reduce((s,p) => s+p.amount,0), count: filtered.filter(p => p.status === 'cleared' || p.status === 'collected').length },
+              { label: 'Impayés',       value: filtered.filter(p => p.status === 'bounced').reduce((s,p) => s+p.amount,0),      count: filtered.filter(p => p.status === 'bounced').length },
+            ].map(r => (
+              <div key={r.label} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 text-sm">
+                <span className="text-gray-600 dark:text-gray-300">{r.label} <span className="text-gray-400 text-xs">({r.count})</span></span>
+                <span className="font-semibold">{fmt(r.value)} MAD</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between pt-2 border-t-2 border-primary/20">
+            <span className="font-bold text-gray-700 dark:text-gray-200">TOTAL GÉNÉRAL</span>
+            <span className="text-lg font-bold text-primary">{fmt(totalAmount)} MAD</span>
+          </div>
+        </div>
+      </Modal>
 
       {/* Detail Drawer */}
       <Drawer open={selected !== null} onClose={() => setSelected(null)} title="Détails du paiement">
@@ -419,6 +478,7 @@ export default function PaiementsPage() {
       <Modal open={showNew} onClose={() => setShowNew(false)} title="Nouveau paiement" size="md">
         <NewPaymentModal onSaved={load} onClose={() => setShowNew(false)} />
       </Modal>
+
     </div>
   )
 }

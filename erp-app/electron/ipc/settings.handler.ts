@@ -72,4 +72,129 @@ export function registerSettingsHandlers(): void {
   handle('update:installLocal', ({ filePath }: { filePath: string }) => {
     return installLocalUpdate(filePath)
   })
+
+  // ── Document Sequences ──────────────────────────────────────────────────
+  handle('sequences:getAll', () => {
+    const db = getDb()
+    const year = new Date().getFullYear() % 100
+    const rows = db.prepare(`
+      SELECT doc_type, year, last_seq
+      FROM document_sequences
+      ORDER BY doc_type, year DESC
+    `).all() as any[]
+    return rows
+  })
+
+  handle('sequences:set', ({ doc_type, year, last_seq }: { doc_type: string; year: number; last_seq: number }) => {
+    const db = getDb()
+    if (last_seq < 0) throw new Error('Le numéro de séquence doit être positif')
+    db.prepare(`
+      INSERT INTO document_sequences (doc_type, year, last_seq)
+      VALUES (?, ?, ?)
+      ON CONFLICT(doc_type, year) DO UPDATE SET last_seq = ?
+    `).run(doc_type, year, last_seq, last_seq)
+    return { success: true }
+  })
+
+  handle('sequences:check', ({ doc_type, seq }: { doc_type: string; seq: number }) => {
+    const db = getDb()
+
+    if (doc_type === 'payment') {
+      const padded = `P-${String(seq).padStart(4, '0')}`
+      const plain  = `P-${seq}`
+      const exists = db.prepare(
+        'SELECT id FROM payments WHERE reference = ? OR reference = ?'
+      ).get(padded, plain) as any
+      if (exists) {
+        let suggestion = seq + 1
+        const allRefs = db.prepare("SELECT reference FROM payments WHERE reference LIKE 'P-%'").all() as any[]
+        const usedSet = new Set(allRefs.map((r: any) => {
+          const parts = (r.reference as string).split('-')
+          return parseInt(parts[parts.length - 1] ?? '0', 10)
+        }).filter((n: number) => !isNaN(n)))
+        while (usedSet.has(suggestion)) suggestion++
+        return { available: false, suggestion }
+      }
+      return { available: true }
+    }
+
+    // مستندات
+    const prefix: Record<string, string> = {
+      invoice: 'F', quote: 'D', bl: 'BL', proforma: 'PRO', avoir: 'AV',
+      purchase_order: 'BC', bl_reception: 'BR', purchase_invoice: 'FF', import_invoice: 'IMP',
+    }
+    const p = prefix[doc_type] ?? 'DOC'
+    const year = new Date().getFullYear() % 100
+    const candidate = `${p}-${year}-${seq}`
+    const exists = db.prepare(
+      'SELECT id FROM documents WHERE number = ? AND is_deleted = 0'
+    ).get(candidate) as any
+    if (exists) {
+      let suggestion = seq + 1
+      while (true) {
+        const c = `${p}-${year}-${suggestion}`
+        const e = db.prepare('SELECT id FROM documents WHERE number = ? AND is_deleted = 0').get(c) as any
+        if (!e) break
+        suggestion++
+      }
+      return { available: false, suggestion }
+    }
+    return { available: true }
+  })
+
+  handle('sequences:getNext', ({ doc_type }: { doc_type: string }) => {
+    const db = getDb()
+
+    // المدفوعات — بدون سنة، تدعم صيغتين: P-0042 و P-42
+    if (doc_type === 'payment') {
+      // نجلب كل الأرقام ونستخرج أكبر قيمة عددية
+      const allRefs = db.prepare(
+        "SELECT reference FROM payments WHERE reference LIKE 'P-%'"
+      ).all() as any[]
+
+      let maxSeq = 0
+      for (const row of allRefs) {
+        const parts = (row.reference as string).split('-')
+        const num = parseInt(parts[parts.length - 1] ?? '0', 10)
+        if (!isNaN(num) && num > maxSeq) maxSeq = num
+      }
+
+      // نجد أصغر رقم متاح >= maxSeq+1
+      let next = maxSeq + 1
+      const usedSet = new Set(
+        allRefs.map((r: any) => {
+          const parts = (r.reference as string).split('-')
+          return parseInt(parts[parts.length - 1] ?? '0', 10)
+        }).filter((n: number) => !isNaN(n))
+      )
+      while (usedSet.has(next)) next++
+
+      return { next, year: 0 }
+    }
+
+    // المستندات — نجد أصغر رقم متاح >= last_seq+1
+    const year = new Date().getFullYear() % 100
+    const prefix: Record<string, string> = {
+      invoice: 'F', quote: 'D', bl: 'BL', proforma: 'PRO', avoir: 'AV',
+      purchase_order: 'BC', bl_reception: 'BR', purchase_invoice: 'FF', import_invoice: 'IMP',
+    }
+    const p = prefix[doc_type] ?? 'DOC'
+
+    const row = db.prepare(
+      'SELECT last_seq FROM document_sequences WHERE doc_type = ? AND year = ?'
+    ).get(doc_type, year) as any
+    let next = (row?.last_seq ?? 0) + 1
+
+    // نتحقق أن الرقم غير مستخدم فعلاً
+    while (true) {
+      const candidate = `${p}-${year}-${next}`
+      const exists = db.prepare(
+        'SELECT id FROM documents WHERE number = ? AND is_deleted = 0'
+      ).get(candidate) as any
+      if (!exists) break
+      next++
+    }
+
+    return { next, year }
+  })
 }

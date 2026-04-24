@@ -240,7 +240,7 @@ export default function UsersSettings({ isAdmin }: Props) {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)}
         title={editUser ? `Modifier — ${editUser.name}` : 'Nouvel utilisateur'}
         size="lg">
-        <form onSubmit={handleSave} className="space-y-5">
+        <form onSubmit={e => { e.stopPropagation(); handleSave(e) }} className="space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Nom complet *</label>

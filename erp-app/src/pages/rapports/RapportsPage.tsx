@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import DocLink from '../../components/ui/DocLink'
 import { api } from '../../lib/api'
 
 const fmt = (n: number) =>
@@ -218,7 +219,7 @@ export default function RapportsPage() {
   }
 
   if (loading) return (
-    <div className="h-full flex items-center justify-center">
+    <div className="flex items-center justify-center py-32">
       <div className="text-center text-gray-400">
         <div className="text-3xl mb-2 animate-pulse">📊</div>
         <div className="text-sm">Chargement des données...</div>
@@ -227,7 +228,7 @@ export default function RapportsPage() {
   )
 
   return (
-    <div className="h-full overflow-auto p-5 space-y-6">
+    <div className="p-5 space-y-6">
 
       {/* ── Header + period filter ── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -444,7 +445,7 @@ export default function RapportsPage() {
               {overdueInvoices.map((n: any, i) => (
                 <div key={i} className="flex items-center justify-between text-xs bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
                   <div>
-                    <div className="font-mono font-bold text-primary">{n.number}</div>
+                    <DocLink docId={n.id} docNumber={n.number} />
                     <div className="text-gray-600 dark:text-gray-300">{n.client_name ?? '—'}</div>
                   </div>
                   <div className="text-right shrink-0 ml-2">
@@ -471,7 +472,7 @@ export default function RapportsPage() {
               {recentInvoices.map((doc: any) => (
                 <div key={doc.id} className="flex items-center justify-between py-2.5">
                   <div>
-                    <div className="font-mono text-xs font-bold text-primary">{doc.number}</div>
+                    <DocLink docId={doc.id} docNumber={doc.number} />
                     <div className="text-xs text-gray-500">{doc.party_name ?? '—'}</div>
                   </div>
                   <div className="text-right">

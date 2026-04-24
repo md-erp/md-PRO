@@ -3,6 +3,7 @@ import { api } from '../../lib/api'
 import { toast } from '../../components/ui/Toast'
 
 export default function BalanceView() {
+
   const [rows, setRows] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [startDate, setStartDate] = useState('')
@@ -35,7 +36,7 @@ export default function BalanceView() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="h-full flex flex-col gap-3 overflow-hidden">
       <div className="flex items-center gap-3">
         <input value={startDate} onChange={e => setStartDate(e.target.value)} className="input w-36" type="date" />
         <input value={endDate} onChange={e => setEndDate(e.target.value)} className="input w-36" type="date" />
@@ -86,16 +87,16 @@ export default function BalanceView() {
         }}>📄 PDF</button>
       </div>
 
-      <div className="card overflow-auto">
+      <div className="card overflow-y-auto flex-1 min-h-0">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 w-24">Code</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">Intitulé</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-600">Total Débit</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-600">Total Crédit</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-600">Solde Débiteur</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-600">Solde Créditeur</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-left font-medium text-gray-600 w-24">Code</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-left font-medium text-gray-600">Intitulé</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-right font-medium text-gray-600">Total Débit</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-right font-medium text-gray-600">Total Crédit</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-right font-medium text-gray-600">Solde Débiteur</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-right font-medium text-gray-600">Solde Créditeur</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700">

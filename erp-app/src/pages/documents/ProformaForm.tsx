@@ -8,6 +8,7 @@ import FormField from '../../components/ui/FormField'
 import { PartySelector } from '../../components/ui/PartySelector'
 import { LinesTable, LinesTotals } from '../../components/ui/LinesTable'
 import type { Product } from '../../types'
+import DocumentNumberField from '../../components/ui/DocumentNumberField'
 
 const INCOTERMS = ['EXW', 'FCA', 'CPT', 'CIP', 'DAP', 'DPU', 'DDP', 'FAS', 'FOB', 'CFR', 'CIF']
 
@@ -36,6 +37,7 @@ interface Props { onSaved: () => void; onCancel: () => void }
 
 export default function ProformaForm({ onSaved, onCancel }: Props) {
   const [products, setProducts] = useState<Product[]>([])
+  const [customSeq, setCustomSeq] = useState<number | undefined>(undefined)
 
   const { register, control, handleSubmit, watch, setValue,
     formState: { errors, isSubmitting } } = useForm<FormData>({
@@ -68,7 +70,8 @@ export default function ProformaForm({ onSaved, onCancel }: Props) {
           incoterm: data.incoterm, port: data.port,
         },
         created_by: 1,
-      }) as any
+          ...(customSeq !== undefined ? { custom_seq: customSeq } : {}),
+        }) as any
       if (confirm) { await api.confirmDocument(doc.id); toast('Proforma confirmée ✓') }
       else toast('Brouillon sauvegardé')
       onSaved()
@@ -83,7 +86,6 @@ export default function ProformaForm({ onSaved, onCancel }: Props) {
           value={watch('party_id')}
           onChange={(id) => setValue('party_id', id)}
           onClear={() => setValue('party_id', 0)}
-          error={errors.party_id?.message}
         />
       </FormField>
 
@@ -91,6 +93,13 @@ export default function ProformaForm({ onSaved, onCancel }: Props) {
         <FormField label="Date" required>
           <input {...register('date')} className="input" type="date" />
         </FormField>
+
+      <FormField label="Numéro du document">
+        <DocumentNumberField
+          docType="proforma"
+          onSeqChange={setCustomSeq}
+        />
+      </FormField>
         <FormField label="Valide jusqu'au">
           <input {...register('validity_date')} className="input" type="date" />
         </FormField>
@@ -137,6 +146,8 @@ export default function ProformaForm({ onSaved, onCancel }: Props) {
         onAdd={() => append({ quantity: 1, unit_price: 0, discount: 0, tva_rate: 0 })}
         showDiscount
         showTva
+      
+        onProductsRefresh={setProducts}
       />
 
       <LinesTotals lines={lines} currency={currency} />

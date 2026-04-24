@@ -8,6 +8,7 @@ import FormField from '../../components/ui/FormField'
 import { PartySelector } from '../../components/ui/PartySelector'
 import { LinesTable, getDefaultTva, LinesTotals } from '../../components/ui/LinesTable'
 import type { Product } from '../../types'
+import DocumentNumberField from '../../components/ui/DocumentNumberField'
 
 const schema = z.object({
   date:            z.string().min(1, 'Date requise'),
@@ -35,6 +36,7 @@ interface Props {
 
 export default function QuoteForm({ onSaved, onCancel }: Props) {
   const [products, setProducts] = useState<Product[]>([])
+  const [customSeq, setCustomSeq] = useState<number | undefined>(undefined)
 
   const { register, control, handleSubmit, watch, setValue,
     formState: { errors, isSubmitting } } = useForm<FormData>({
@@ -68,7 +70,8 @@ export default function QuoteForm({ onSaved, onCancel }: Props) {
         lines: data.lines, notes: data.notes,
         extra: { validity_date: data.validity_date, global_discount: data.global_discount },
         created_by: 1,
-      }) as any
+          ...(customSeq !== undefined ? { custom_seq: customSeq } : {}),
+        }) as any
       if (confirm) { await api.confirmDocument(doc.id); toast('Devis confirmé ✓') }
       else toast('Brouillon sauvegardé')
       onSaved()
@@ -83,7 +86,6 @@ export default function QuoteForm({ onSaved, onCancel }: Props) {
           value={watch('party_id')}
           onChange={(id) => setValue('party_id', id)}
           onClear={() => setValue('party_id', 0)}
-          error={errors.party_id?.message}
         />
       </FormField>
 
@@ -91,6 +93,13 @@ export default function QuoteForm({ onSaved, onCancel }: Props) {
         <FormField label="Date" required>
           <input {...register('date')} className="input" type="date" />
         </FormField>
+
+      <FormField label="Numéro du document">
+        <DocumentNumberField
+          docType="quote"
+          onSeqChange={setCustomSeq}
+        />
+      </FormField>
         <FormField label="Valide jusqu'au">
           <input {...register('validity_date')} className="input" type="date" />
         </FormField>
@@ -110,6 +119,8 @@ export default function QuoteForm({ onSaved, onCancel }: Props) {
         showDiscount
         showTva
         showMargin
+      
+        onProductsRefresh={setProducts}
       />
 
       <LinesTotals

@@ -13,6 +13,8 @@ import { migration_010_change_tracking } from './010_change_tracking'
 import { migration_011_invoice_template } from './011_invoice_template'
 import { migration_012_company_details } from './012_company_details'
 import { migration_013_custom_templates } from './013_custom_templates'
+import { migration_014_payment_reference } from './014_payment_reference'
+import { migration_015_fix_payment_reference } from './015_fix_payment_reference'
 
 const MIGRATIONS = [
   { version: 1, name: 'initial', run: migration_001_initial },
@@ -29,6 +31,8 @@ const MIGRATIONS = [
   { version: 11, name: 'invoice_template', run: migration_011_invoice_template },
   { version: 12, name: 'company_details', run: migration_012_company_details },
   { version: 13, name: 'custom_templates', run: migration_013_custom_templates },
+  { version: 14, name: 'payment_reference', run: migration_014_payment_reference },
+  { version: 15, name: 'fix_payment_reference', run: migration_015_fix_payment_reference },
 ]
 
 export function runMigrations(db: Database.Database): void {

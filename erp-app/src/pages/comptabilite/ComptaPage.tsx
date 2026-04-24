@@ -17,7 +17,7 @@ export default function ComptaPage() {
   const [tab, setTab] = useState<string>('plan')
   return (
     <div className="h-full flex flex-col">
-      <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4">
+      <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sticky top-0 z-10">
         <div className="flex gap-1 py-1.5 overflow-x-auto">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
@@ -30,7 +30,7 @@ export default function ComptaPage() {
           ))}
         </div>
       </div>
-      <div className="overflow-y-auto p-4">
+      <div className="p-4 flex-1 min-h-0 overflow-hidden">
         {tab === 'plan'    && <PlanComptable />}
         {tab === 'journal' && <JournalView />}
         {tab === 'grand'   && <GrandLivreView />}

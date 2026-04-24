@@ -6,10 +6,12 @@ import Drawer from '../../components/ui/Drawer'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import DocumentDetail from '../../components/DocumentDetail'
 import type { StockMovement } from '../../types'
+import DocLink from '../../components/ui/DocLink'
 
 const LIMIT = 50
 
 export default function MovementsList() {
+
   const [rows, setRows]     = useState<StockMovement[]>([])
   const [total, setTotal]   = useState(0)
   const [page, setPage]     = useState(1)
@@ -105,7 +107,7 @@ export default function MovementsList() {
   )
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="h-full flex flex-col gap-3 overflow-hidden">
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
@@ -129,7 +131,7 @@ export default function MovementsList() {
       </div>
 
       {/* Table */}
-      <div className="card overflow-auto">
+      <div className="card overflow-y-auto flex-1 min-h-0">
         <table className="w-full text-sm table-fixed border-collapse">
           <colgroup>
             <col style={{ width: '88px' }} />
@@ -141,16 +143,16 @@ export default function MovementsList() {
             <col style={{ width: '130px' }} />
             <col style={{ width: '120px' }} />
           </colgroup>
-          <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0 [&_th]:border [&_th]:border-gray-200 dark:[&_th]:border-gray-600">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr className="divide-x divide-gray-200 dark:divide-gray-600">
-              <th className="px-2 py-3 text-center align-middle font-medium text-gray-600 whitespace-nowrap">Date</th>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600">Produit</th>
-              <th className="px-2 py-3 text-center align-middle font-medium text-gray-600 whitespace-nowrap">Mouvement</th>
-              <th className="px-2 py-3 text-center align-middle font-medium text-gray-600 whitespace-nowrap">Quantité</th>
-              <th className="px-2 py-3 text-center align-middle font-medium text-gray-600 whitespace-nowrap">Coût unitaire</th>
-              <th className="px-2 py-3 text-center align-middle font-medium text-gray-600 whitespace-nowrap">CMUP avant → après</th>
-              <th className="px-2 py-3 text-center align-middle font-medium text-gray-600 whitespace-nowrap">Source</th>
-              <th className="px-2 py-3 text-center align-middle font-medium text-gray-600 whitespace-nowrap">Statut</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-2 py-3 text-center align-middle font-medium text-gray-600 whitespace-nowrap">Date</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600">Produit</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-2 py-3 text-center align-middle font-medium text-gray-600 whitespace-nowrap">Mouvement</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-2 py-3 text-center align-middle font-medium text-gray-600 whitespace-nowrap">Quantité</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-2 py-3 text-center align-middle font-medium text-gray-600 whitespace-nowrap">Coût unitaire</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-2 py-3 text-center align-middle font-medium text-gray-600 whitespace-nowrap">CMUP avant → après</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-2 py-3 text-center align-middle font-medium text-gray-600 whitespace-nowrap">Source</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-2 py-3 text-center align-middle font-medium text-gray-600 whitespace-nowrap">Statut</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700 [&_td]:border [&_td]:border-gray-100 dark:[&_td]:border-gray-700">
@@ -207,16 +209,14 @@ export default function MovementsList() {
                 </td>
                 {/* Source */}
                 <td className="px-2 py-3 min-w-0 text-center align-middle">
-                  {(() => {
-                    const src = getSource(m)
-                    return src.clickable
-                      ? <button
-                          onClick={() => setSelectedDocId(m.document_id!)}
-                          className="text-xs text-primary font-medium hover:underline truncate block w-full"
-                          title={src.text}
-                        >{src.text}</button>
-                      : <span className="text-xs text-gray-500 truncate block">{src.text}</span>
-                  })()}
+                  {m.document_id
+                    ? <DocLink docId={m.document_id} docNumber={m.document_number ?? undefined} />
+                    : m.production_id
+                      ? <span className="text-xs text-gray-500">Prod #{m.production_id}</span>
+                      : m.transformation_id
+                        ? <span className="text-xs text-gray-500">Trans #{m.transformation_id}</span>
+                        : <span className="text-xs text-gray-400">{m.manual_ref ?? '—'}</span>
+                  }
                   {m.notes && <div className="text-xs text-gray-400 truncate mt-0.5">{m.notes}</div>}
                 </td>
                 {/* Statut */}

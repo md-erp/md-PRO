@@ -8,6 +8,7 @@ import BomForm from './BomForm'
 const fmt = (n: number) => new Intl.NumberFormat('fr-MA', { minimumFractionDigits: 2 }).format(n ?? 0)
 
 export default function BomList() {
+
   const [rows, setRows]           = useState<any[]>([])
   const [loading, setLoading]     = useState(false)
   const [search, setSearch]       = useState('')
@@ -74,7 +75,7 @@ export default function BomList() {
   const multiVariant  = Object.values(productCounts).filter(c => c > 1).length
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="h-full flex flex-col gap-3 overflow-hidden">
 
       {/* ── Toolbar ── */}
       <div className="flex items-center gap-3 shrink-0">
@@ -118,18 +119,18 @@ export default function BomList() {
         </div>
 
       {/* ── Table ── */}
-      <div className="card overflow-auto">
+      <div className="card overflow-y-auto flex-1 min-h-0">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0 z-10">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-4 py-3 w-8"></th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Produit fini</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Nomenclature</th>
-              <th className="px-4 py-3 text-center font-medium text-gray-600 dark:text-gray-300 w-28">Matières</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300 w-40">Coût de revient</th>
-              <th className="px-4 py-3 text-center font-medium text-gray-600 dark:text-gray-300 w-20">Défaut</th>
-              <th className="px-4 py-3 text-center font-medium text-gray-600 dark:text-gray-300 w-24">Stock</th>
-              <th className="px-4 py-3 w-24"></th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 w-8"></th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Produit fini</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Nomenclature</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center font-medium text-gray-600 dark:text-gray-300 w-28">Matières</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300 w-40">Coût de revient</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center font-medium text-gray-600 dark:text-gray-300 w-20">Défaut</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-center font-medium text-gray-600 dark:text-gray-300 w-24">Stock</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-4 py-3 w-24"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700">

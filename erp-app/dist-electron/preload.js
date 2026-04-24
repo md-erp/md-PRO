@@ -148,6 +148,13 @@ const api = {
     updateInstall: (p) => electron_1.ipcRenderer.invoke('update:install', p),
     updatePublish: (d) => electron_1.ipcRenderer.invoke('update:publish', d),
     updateList: () => electron_1.ipcRenderer.invoke('update:list'),
+    updateSelectLocalFile: () => electron_1.ipcRenderer.invoke('update:selectLocalFile'),
+    updateInstallLocal: (d) => electron_1.ipcRenderer.invoke('update:installLocal', d),
+    // --- Document Sequences ---
+    sequencesGetAll: () => electron_1.ipcRenderer.invoke('sequences:getAll'),
+    sequencesSet: (d) => electron_1.ipcRenderer.invoke('sequences:set', d),
+    sequencesGetNext: (d) => electron_1.ipcRenderer.invoke('sequences:getNext', d),
+    sequencesCheck: (d) => electron_1.ipcRenderer.invoke('sequences:check', d),
     // --- Push Notifications from Main ─────────────────────────
     onSyncUpdated: (cb) => {
         electron_1.ipcRenderer.on('sync:updated', (_e, data) => cb(data));

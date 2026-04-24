@@ -7,6 +7,7 @@ import { toast } from '../ui/Toast'
 import FormField from '../ui/FormField'
 import { PartySelector } from '../ui/PartySelector'
 import { LinesTable, getDefaultTva, LinesTotals } from '../ui/LinesTable'
+import DocumentNumberField from '../ui/DocumentNumberField'
 import type { Product } from '../../types'
 
 const schema = z.object({
@@ -52,6 +53,7 @@ export default function InvoiceForm({
   onCancel,
 }: Props) {
   const [products, setProducts] = useState<Product[]>([])
+  const [customSeq, setCustomSeq] = useState<number | undefined>(undefined)
   const isEdit = !!editDocId
 
   const { register, control, handleSubmit, watch, setValue, reset,
@@ -114,6 +116,7 @@ export default function InvoiceForm({
             payment_method: data.payment_method, due_date: data.due_date,
           },
           created_by: 1,
+          ...(customSeq !== undefined ? { custom_seq: customSeq } : {}),
         }) as any
         if (confirm) {
           await api.confirmDocument(doc.id)
@@ -131,6 +134,7 @@ export default function InvoiceForm({
             payment_method: data.payment_method, due_date: data.due_date,
           },
           created_by: 1,
+          ...(customSeq !== undefined ? { custom_seq: customSeq } : {}),
         }) as any
         if (confirm) {
           await api.confirmDocument(doc.id)
@@ -160,7 +164,6 @@ export default function InvoiceForm({
           value={watch('party_id')}
           onChange={(id) => setValue('party_id', id)}
           onClear={() => setValue('party_id', 0)}
-          error={errors.party_id?.message}
         />
       </FormField>
 
@@ -172,6 +175,15 @@ export default function InvoiceForm({
           <input {...register('due_date')} className="input" type="date" />
         </FormField>
       </div>
+
+      {!isEdit && (
+        <FormField label="Numéro du document">
+          <DocumentNumberField
+            docType={docType}
+            onSeqChange={setCustomSeq}
+          />
+        </FormField>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <FormField label="Mode de paiement">
@@ -214,6 +226,8 @@ export default function InvoiceForm({
         onAdd={() => append({ quantity: 1, unit_price: 0, discount: 0, tva_rate: getDefaultTva() })}
         showDiscount
         showTva
+      
+        onProductsRefresh={setProducts}
       />
 
       <LinesTotals lines={lines} currency={currency} />

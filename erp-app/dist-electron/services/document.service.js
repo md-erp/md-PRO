@@ -20,18 +20,50 @@ const DOC_PREFIXES = {
     purchase_invoice: 'FF',
     import_invoice: 'IMP',
 };
-function generateDocumentNumber(docType) {
+function generateDocumentNumber(docType, customSeq) {
     const db = (0, connection_1.getDb)();
-    const year = new Date().getFullYear() % 100; // 2026 → 26
+    const year = new Date().getFullYear() % 100;
     const prefix = DOC_PREFIXES[docType] ?? 'DOC';
     const tx = db.transaction(() => {
+        // إيجاد أصغر رقم متاح >= المطلوب (أو >= last_seq+1 إذا لم يُحدَّد)
+        const startFrom = customSeq ?? (() => {
+            const row = db.prepare('SELECT last_seq FROM document_sequences WHERE doc_type = ? AND year = ?').get(docType, year);
+            return (row?.last_seq ?? 0) + 1;
+        })();
+        // إذا اختار المستخدم رقماً يدوياً وكان مستخدماً → نرفض
+        if (customSeq !== undefined) {
+            const candidateManual = `${prefix}-${year}-${customSeq}`;
+            const existsManual = db.prepare('SELECT id FROM documents WHERE number = ? AND is_deleted = 0').get(candidateManual);
+            if (existsManual) {
+                // نجد أقرب رقم متاح
+                let suggestion = customSeq + 1;
+                while (true) {
+                    const c = `${prefix}-${year}-${suggestion}`;
+                    const e = db.prepare('SELECT id FROM documents WHERE number = ? AND is_deleted = 0').get(c);
+                    if (!e)
+                        break;
+                    suggestion++;
+                }
+                throw new Error(`Le numéro ${candidateManual} est déjà utilisé. Prochain disponible: ${prefix}-${year}-${suggestion}`);
+            }
+        }
+        // نجد أصغر رقم >= startFrom غير مستخدم في جدول documents
+        let seq = startFrom;
+        while (true) {
+            const candidate = `${prefix}-${year}-${seq}`;
+            const exists = db.prepare('SELECT id FROM documents WHERE number = ? AND is_deleted = 0').get(candidate);
+            if (!exists)
+                break;
+            seq++;
+        }
+        // نحدّث last_seq ليكون على الأقل = seq
         db.prepare(`
       INSERT INTO document_sequences (doc_type, year, last_seq)
-      VALUES (?, ?, 1)
-      ON CONFLICT(doc_type, year) DO UPDATE SET last_seq = last_seq + 1
-    `).run(docType, year);
-        const row = db.prepare('SELECT last_seq FROM document_sequences WHERE doc_type = ? AND year = ?').get(docType, year);
-        return `${prefix}-${year}-${row.last_seq}`;
+      VALUES (?, ?, ?)
+      ON CONFLICT(doc_type, year) DO UPDATE SET
+        last_seq = CASE WHEN last_seq < ? THEN ? ELSE last_seq END
+    `).run(docType, year, seq, seq, seq);
+        return `${prefix}-${year}-${seq}`;
     });
     return tx();
 }
@@ -40,7 +72,7 @@ function generateDocumentNumber(docType) {
 // ==========================================
 function createDocument(data) {
     const db = (0, connection_1.getDb)();
-    const number = generateDocumentNumber(data.type);
+    const number = generateDocumentNumber(data.type, data.custom_seq);
     // حساب الإجماليات
     let total_ht = 0;
     let total_tva = 0;

@@ -170,6 +170,14 @@ const api = {
   updateInstall:  (p: string)  => ipcRenderer.invoke('update:install', p),
   updatePublish:  (d: unknown) => ipcRenderer.invoke('update:publish', d),
   updateList:     ()           => ipcRenderer.invoke('update:list'),
+  updateSelectLocalFile: ()    => ipcRenderer.invoke('update:selectLocalFile'),
+  updateInstallLocal: (d: unknown) => ipcRenderer.invoke('update:installLocal', d),
+
+  // --- Document Sequences ---
+  sequencesGetAll:  ()           => ipcRenderer.invoke('sequences:getAll'),
+  sequencesSet:     (d: unknown) => ipcRenderer.invoke('sequences:set', d),
+  sequencesGetNext: (d: unknown) => ipcRenderer.invoke('sequences:getNext', d),
+  sequencesCheck:   (d: unknown) => ipcRenderer.invoke('sequences:check', d),
 
   // --- Push Notifications from Main ─────────────────────────
   onSyncUpdated:  (cb: (data: unknown) => void) => {

@@ -67,4 +67,109 @@ function registerSettingsHandlers() {
     (0, index_1.handle)('update:installLocal', ({ filePath }) => {
         return (0, updater_service_1.installLocalUpdate)(filePath);
     });
+    // ── Document Sequences ──────────────────────────────────────────────────
+    (0, index_1.handle)('sequences:getAll', () => {
+        const db = (0, connection_1.getDb)();
+        const year = new Date().getFullYear() % 100;
+        const rows = db.prepare(`
+      SELECT doc_type, year, last_seq
+      FROM document_sequences
+      ORDER BY doc_type, year DESC
+    `).all();
+        return rows;
+    });
+    (0, index_1.handle)('sequences:set', ({ doc_type, year, last_seq }) => {
+        const db = (0, connection_1.getDb)();
+        if (last_seq < 0)
+            throw new Error('Le numéro de séquence doit être positif');
+        db.prepare(`
+      INSERT INTO document_sequences (doc_type, year, last_seq)
+      VALUES (?, ?, ?)
+      ON CONFLICT(doc_type, year) DO UPDATE SET last_seq = ?
+    `).run(doc_type, year, last_seq, last_seq);
+        return { success: true };
+    });
+    (0, index_1.handle)('sequences:check', ({ doc_type, seq }) => {
+        const db = (0, connection_1.getDb)();
+        if (doc_type === 'payment') {
+            const padded = `P-${String(seq).padStart(4, '0')}`;
+            const plain = `P-${seq}`;
+            const exists = db.prepare('SELECT id FROM payments WHERE reference = ? OR reference = ?').get(padded, plain);
+            if (exists) {
+                let suggestion = seq + 1;
+                const allRefs = db.prepare("SELECT reference FROM payments WHERE reference LIKE 'P-%'").all();
+                const usedSet = new Set(allRefs.map((r) => {
+                    const parts = r.reference.split('-');
+                    return parseInt(parts[parts.length - 1] ?? '0', 10);
+                }).filter((n) => !isNaN(n)));
+                while (usedSet.has(suggestion))
+                    suggestion++;
+                return { available: false, suggestion };
+            }
+            return { available: true };
+        }
+        // مستندات
+        const prefix = {
+            invoice: 'F', quote: 'D', bl: 'BL', proforma: 'PRO', avoir: 'AV',
+            purchase_order: 'BC', bl_reception: 'BR', purchase_invoice: 'FF', import_invoice: 'IMP',
+        };
+        const p = prefix[doc_type] ?? 'DOC';
+        const year = new Date().getFullYear() % 100;
+        const candidate = `${p}-${year}-${seq}`;
+        const exists = db.prepare('SELECT id FROM documents WHERE number = ? AND is_deleted = 0').get(candidate);
+        if (exists) {
+            let suggestion = seq + 1;
+            while (true) {
+                const c = `${p}-${year}-${suggestion}`;
+                const e = db.prepare('SELECT id FROM documents WHERE number = ? AND is_deleted = 0').get(c);
+                if (!e)
+                    break;
+                suggestion++;
+            }
+            return { available: false, suggestion };
+        }
+        return { available: true };
+    });
+    (0, index_1.handle)('sequences:getNext', ({ doc_type }) => {
+        const db = (0, connection_1.getDb)();
+        // المدفوعات — بدون سنة، تدعم صيغتين: P-0042 و P-42
+        if (doc_type === 'payment') {
+            // نجلب كل الأرقام ونستخرج أكبر قيمة عددية
+            const allRefs = db.prepare("SELECT reference FROM payments WHERE reference LIKE 'P-%'").all();
+            let maxSeq = 0;
+            for (const row of allRefs) {
+                const parts = row.reference.split('-');
+                const num = parseInt(parts[parts.length - 1] ?? '0', 10);
+                if (!isNaN(num) && num > maxSeq)
+                    maxSeq = num;
+            }
+            // نجد أصغر رقم متاح >= maxSeq+1
+            let next = maxSeq + 1;
+            const usedSet = new Set(allRefs.map((r) => {
+                const parts = r.reference.split('-');
+                return parseInt(parts[parts.length - 1] ?? '0', 10);
+            }).filter((n) => !isNaN(n)));
+            while (usedSet.has(next))
+                next++;
+            return { next, year: 0 };
+        }
+        // المستندات — نجد أصغر رقم متاح >= last_seq+1
+        const year = new Date().getFullYear() % 100;
+        const prefix = {
+            invoice: 'F', quote: 'D', bl: 'BL', proforma: 'PRO', avoir: 'AV',
+            purchase_order: 'BC', bl_reception: 'BR', purchase_invoice: 'FF', import_invoice: 'IMP',
+        };
+        const p = prefix[doc_type] ?? 'DOC';
+        const row = db.prepare('SELECT last_seq FROM document_sequences WHERE doc_type = ? AND year = ?').get(doc_type, year);
+        let next = (row?.last_seq ?? 0) + 1;
+        // نتحقق أن الرقم غير مستخدم فعلاً
+        while (true) {
+            const candidate = `${p}-${year}-${next}`;
+            const exists = db.prepare('SELECT id FROM documents WHERE number = ? AND is_deleted = 0').get(candidate);
+            if (!exists)
+                break;
+            next++;
+        }
+        return { next, year };
+    });
 }

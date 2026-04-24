@@ -51,7 +51,7 @@ function generateCode(name: string, type: string): string {
 
 interface Props {
   initial?: Partial<Product>
-  onSaved: () => void
+  onSaved: (createdId?: number) => void
   onCancel: () => void
 }
 
@@ -68,7 +68,7 @@ export default function ProductForm({ initial, onSaved, onCancel }: Props) {
       type:           initial?.type ?? 'finished',
       min_stock:      initial?.min_stock ?? 0,
       sale_price:     initial?.sale_price ?? 0,
-      cost_price:     (initial as any)?.cost_price ?? 0,
+      cost_price:     (initial as any)?.cost_price ?? (initial as any)?.cmup_price ?? 0,
       margin_mode:    'auto',
       margin_percent: 30,
       tva_rate_id:    initial?.tva_rate_id ?? 5,
@@ -110,18 +110,19 @@ export default function ProductForm({ initial, onSaved, onCancel }: Props) {
       if (isEdit) {
         await api.updateProduct({ ...data, id: initial!.id })
         toast('Produit modifié')
+        onSaved()
       } else {
-        await api.createProduct(data)
+        const res = (await api.createProduct(data)) as any
         toast('Produit créé')
+        onSaved(res?.id)
       }
-      onSaved()
     } catch (e: any) {
       toast(e.message, 'error')
     }
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <div className="space-y-4">
 
       {/* Type */}
       <div>
@@ -280,10 +281,14 @@ export default function ProductForm({ initial, onSaved, onCancel }: Props) {
         <button type="button" onClick={onCancel} className="btn-secondary flex-1 justify-center">
           Annuler
         </button>
-        <button type="submit" disabled={isSubmitting} className="btn-primary flex-1 justify-center">
+        <button
+          type="button"
+          disabled={isSubmitting}
+          onClick={() => handleSubmit(onSubmit)()}
+          className="btn-primary flex-1 justify-center">
           {isSubmitting ? 'Enregistrement...' : isEdit ? '💾 Modifier' : '✅ Créer'}
         </button>
       </div>
-    </form>
+    </div>
   )
 }

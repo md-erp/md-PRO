@@ -8,6 +8,7 @@ import FormField from '../../components/ui/FormField'
 import { PartySelector } from '../../components/ui/PartySelector'
 import { LinesTable, getDefaultTva, LinesTotals } from '../../components/ui/LinesTable'
 import type { Product, Document } from '../../types'
+import DocumentNumberField from '../../components/ui/DocumentNumberField'
 
 const schema = z.object({
   date:              z.string().min(1, 'Date requise'),
@@ -31,6 +32,7 @@ interface Props { onSaved: () => void; onCancel: () => void }
 export default function ReceptionForm({ onSaved, onCancel }: Props) {
   const [products, setProducts] = useState<Product[]>([])
   const [purchaseOrders, setPurchaseOrders] = useState<Document[]>([])
+  const [customSeq, setCustomSeq] = useState<number | undefined>(undefined)
 
   const { register, control, handleSubmit, watch, setValue,
     formState: { errors, isSubmitting } } = useForm<FormData>({
@@ -64,7 +66,8 @@ export default function ReceptionForm({ onSaved, onCancel }: Props) {
         lines: data.lines, notes: data.notes,
         extra: { purchase_order_id: data.purchase_order_id || null },
         created_by: 1,
-      }) as any
+          ...(customSeq !== undefined ? { custom_seq: customSeq } : {}),
+        }) as any
 
       // Lier au BC si sélectionné
       if (data.purchase_order_id) {
@@ -89,7 +92,6 @@ export default function ReceptionForm({ onSaved, onCancel }: Props) {
           value={watch('party_id')}
           onChange={(id) => setValue('party_id', id)}
           onClear={() => setValue('party_id', 0)}
-          error={errors.party_id?.message}
         />
       </FormField>
 
@@ -97,6 +99,13 @@ export default function ReceptionForm({ onSaved, onCancel }: Props) {
         <FormField label="Date réception" required>
           <input {...register('date')} className="input" type="date" />
         </FormField>
+
+      <FormField label="Numéro du document">
+        <DocumentNumberField
+          docType="bl_reception"
+          onSeqChange={setCustomSeq}
+        />
+      </FormField>
         <FormField label="Bon de commande lié">
           <select {...register('purchase_order_id')} className="input">
             <option value="">— Sans BC lié —</option>
@@ -119,6 +128,8 @@ export default function ReceptionForm({ onSaved, onCancel }: Props) {
         showTva
         priceLabel="Prix d'achat HT"
         productFilter={p => p.type === 'raw' || p.type === 'semi_finished'}
+      
+        onProductsRefresh={setProducts}
       />
 
       <LinesTotals lines={lines} />

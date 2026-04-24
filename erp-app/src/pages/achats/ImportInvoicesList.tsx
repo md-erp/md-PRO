@@ -24,6 +24,7 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 export default function ImportInvoicesList() {
+
   const [data, setData]               = useState<PaginatedResponse<Document> | null>(null)
   const [search, setSearch]           = useState('')
   const [dateFrom, setDateFrom]       = useState('')
@@ -34,6 +35,7 @@ export default function ImportInvoicesList() {
   const [showCancelled, setShowCancelled] = useState(false)
   const [modalOpen, setModalOpen]     = useState(false)
   const [selectedId, setSelectedId]   = useState<number | null>(null)
+  const [showTotals, setShowTotals]     = useState(false)
   const searchRef = useRef<ReturnType<typeof setTimeout>>()
 
   const load = useCallback(async () => {
@@ -72,8 +74,8 @@ export default function ImportInvoicesList() {
   const totalCost = filtered.filter(d => d.status !== 'cancelled').reduce((s, d) => s + d.total_ttc, 0)
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between shrink-0">
+    <div className="h-full flex flex-col gap-3 overflow-hidden">
+      <div className="flex items-center justify-between">
         <button className="btn-primary px-5 py-2.5 text-sm font-semibold shadow-sm" onClick={() => setModalOpen(true)}>
           + Nouvelle Importation
         </button>
@@ -121,7 +123,7 @@ export default function ImportInvoicesList() {
 
       </div>
 
-      <div className="card overflow-auto">
+      <div className="card overflow-y-auto flex-1 min-h-0">
         <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '80px' }} />
@@ -132,15 +134,15 @@ export default function ImportInvoicesList() {
             <col style={{ width: '147px' }} />
             <col style={{ width: '80px' }} />
           </colgroup>
-          <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0 z-10 [&_th]:border [&_th]:border-gray-200 dark:[&_th]:border-gray-600">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Numéro</th>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Date</th>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Fournisseur</th>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Total HT</th>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">TVA import</th>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Coût total MAD</th>
-              <th className="px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Statut</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Numéro</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Date</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Fournisseur</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Total HT</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">TVA import</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Coût total MAD</th>
+              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center align-middle font-medium text-gray-600 dark:text-gray-300">Statut</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700 [&_td]:border [&_td]:border-gray-100 dark:[&_td]:border-gray-700">
@@ -175,19 +177,18 @@ export default function ImportInvoicesList() {
               </tr>
             ))}
           </tbody>
-          {!loading && filtered.length > 0 && (
-            <tfoot className="sticky bottom-0 z-10 [&_tr]:bg-gray-50 dark:[&_tr]:bg-[#2a2a2a]">
-              <tr className="bg-gray-50 dark:bg-gray-700/50 border-t-2 border-gray-200 dark:border-gray-600 font-semibold text-sm">
-                <td colSpan={3} className="px-3 py-3 text-left text-gray-500">Total ({filtered.length})</td>
-                <td className="px-3 py-3 text-center text-gray-700 dark:text-gray-200">{fmt(filtered.reduce((s, d) => s + d.total_ht, 0))} MAD</td>
-                <td className="px-3 py-3 text-center text-gray-500">{fmt(filtered.reduce((s, d) => s + d.total_tva, 0))} MAD</td>
-                <td className="px-3 py-3 text-center text-primary font-bold">{fmt(totalCost)} MAD</td>
-                <td />
-              </tr>
-            </tfoot>
-          )}
         </table>
       </div>
+
+      {!loading && filtered.length > 0 && (
+        <button onClick={() => setShowTotals(true)}
+          className="shrink-0 flex items-center justify-between px-4 py-2.5 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors w-full text-left">
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+            Total — {filtered.length} importation{filtered.length > 1 ? 's' : ''} <span className="text-xs text-gray-400">→ détails</span>
+          </span>
+          <span className="text-base font-bold text-primary whitespace-nowrap">{fmt(filtered.reduce((s, d) => s + d.total_ttc, 0))} MAD</span>
+        </button>
+      )}
 
       {(data?.total ?? 0) > 100 && (
         <div className="flex items-center justify-between shrink-0 text-xs text-gray-500">
@@ -199,6 +200,53 @@ export default function ImportInvoicesList() {
           </div>
         </div>
       )}
+
+      <Modal open={showTotals} onClose={() => setShowTotals(false)} title="📊 Récapitulatif — Importations" size="md">
+        <div className="p-6 space-y-5">
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Total HT',      value: filtered.filter(d=>d.status!=='cancelled').reduce((s,d)=>s+d.total_ht,0),  color: 'text-gray-700 dark:text-gray-200', bg: 'bg-gray-50 dark:bg-gray-700/30' },
+              { label: 'TVA import',    value: filtered.filter(d=>d.status!=='cancelled').reduce((s,d)=>s+d.total_tva,0), color: 'text-gray-500',                    bg: 'bg-gray-50 dark:bg-gray-700/30' },
+              { label: 'Coût total',    value: filtered.filter(d=>d.status!=='cancelled').reduce((s,d)=>s+d.total_ttc,0), color: 'text-primary',                     bg: 'bg-primary/5' },
+              { label: 'Coût moyen',    value: active.length > 0 ? active.reduce((s,d)=>s+d.total_ttc,0)/active.length : 0, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/10' },
+            ].map(r => (
+              <div key={r.label} className={`rounded-xl p-4 ${r.bg}`}>
+                <div className="text-xs text-gray-400 mb-1">{r.label}</div>
+                <div className={`text-lg font-bold ${r.color}`}>{fmt(r.value)} MAD</div>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Répartition par statut</div>
+            <div className="space-y-1.5">
+              {[
+                { key: 'draft',     label: 'Brouillons',  color: 'text-gray-500' },
+                { key: 'confirmed', label: 'Confirmées',  color: 'text-blue-600' },
+                { key: 'cancelled', label: 'Annulées',    color: 'text-gray-400' },
+              ].map(s => {
+                const count = allRows.filter(d=>d.status===s.key).length
+                if (!count) return null
+                const amt = allRows.filter(d=>d.status===s.key).reduce((a,d)=>a+d.total_ttc,0)
+                const pct = allRows.length > 0 ? (count/allRows.length)*100 : 0
+                return (
+                  <div key={s.key} className="flex items-center gap-3">
+                    <div className="text-xs text-gray-500 w-24 shrink-0">{s.label}</div>
+                    <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
+                      <div className="bg-primary h-1.5 rounded-full" style={{width:`${pct}%`}} />
+                    </div>
+                    <div className={`text-xs font-semibold w-5 text-right ${s.color}`}>{count}</div>
+                    <div className="text-xs text-gray-400 w-28 text-right">{fmt(amt)} MAD</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          <div className="flex items-center justify-between pt-3 border-t-2 border-primary/20">
+            <span className="font-bold text-gray-700 dark:text-gray-200">COÛT TOTAL GÉNÉRAL</span>
+            <span className="text-xl font-bold text-primary">{fmt(filtered.filter(d=>d.status!=='cancelled').reduce((s,d)=>s+d.total_ttc,0))} MAD</span>
+          </div>
+        </div>
+      </Modal>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nouvelle Importation (Landed Cost)" size="xl">
         <ImportInvoiceForm onSaved={() => { setModalOpen(false); load() }} onCancel={() => setModalOpen(false)} />
